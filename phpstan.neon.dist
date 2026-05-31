@@ -1,0 +1,18 @@
+parameters:
+    level: 0
+    paths:
+        - index.php
+        - install.php
+        - admin
+        - install
+        - usr/plugins/HelloWorld
+        - usr/themes/default
+        - usr/themes/classic-22
+        - var
+    bootstrapFiles:
+        - tools/phpstan-bootstrap.php
+    excludePaths:
+        analyse:
+            - tools/node_modules (?)
+            - usr/uploads (?)
+    treatPhpDocTypesAsCertain: false

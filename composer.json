@@ -1,0 +1,19 @@
+{
+    "name": "typecho/typecho-fork",
+    "description": "A modern PHP fork of the Typecho blogging platform.",
+    "license": "GPL-2.0-only",
+    "type": "project",
+    "require": {
+        "php": ">=8.3"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^2.0"
+    },
+    "scripts": {
+        "analyse": "phpstan analyse",
+        "lint": "find index.php install.php admin install usr var -type f -name '*.php' -print0 | xargs -0 -n1 -P4 php -l"
+    },
+    "config": {
+        "allow-plugins": {}
+    }
+}
