@@ -219,7 +219,7 @@ include 'table-js.php';
 $(document).ready(function () {
     // 记住滚动条
     function rememberScroll () {
-        $(window).bind('beforeunload', function () {
+        $(window).on('beforeunload', function () {
             $.cookie('__typecho_comments_scroll', $('body').scrollTop());
         });
     }

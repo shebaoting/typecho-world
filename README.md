@@ -67,6 +67,29 @@ Event listeners receive a `Typecho\Event\Event` object. For filter events, retur
 `$event->setValue()`. For action events, return a result or call `$event->setResult()`.
 Use `$event->stopPropagation()` when later listeners should not run.
 
+## Admin JavaScript
+
+Admin JavaScript vendor files are synced from npm during the build. The default build uses jQuery 3.7.x
+as a compatibility bridge while the admin code and plugins move away from removed APIs:
+
+```bash
+cd tools
+npm run build_js
+```
+
+For jQuery 4 validation, generate the experimental bundle:
+
+```bash
+cd tools
+npm run build_js:jquery4
+```
+
+To load jQuery Migrate temporarily while testing either bundle, add this to `config.inc.php`:
+
+```php
+define('__TYPECHO_JQUERY_MIGRATE__', true);
+```
+
 ## Screenshots
 
 ![Typecho](https://typecho.org/usr/themes/bluecode/img/screenshot/st1.png)

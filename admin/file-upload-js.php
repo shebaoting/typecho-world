@@ -19,7 +19,7 @@ $(document).ready(function() {
 
         if (count > 0) {
             if (!balloon.length) {
-                btn.html($.trim(btn.html()) + ' ');
+                btn.html(btn.html().trim() + ' ');
                 balloon = $('<span class="balloon"></span>').appendTo(btn);
             }
 
@@ -31,7 +31,7 @@ $(document).ready(function() {
 
     updateAttachmentNumber();
 
-    const uploadUrl = $('.upload-area').bind({
+    const uploadUrl = $('.upload-area').on({
         dragenter   :   function (e) {
             $(this).parent().addClass('drag');
         },
@@ -243,4 +243,3 @@ $(document).ready(function() {
     });
 });
 </script>
-

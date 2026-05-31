@@ -136,7 +136,7 @@ $(document).ready(function() {
             justifySlug.text(val.length > 0 ? val : '     ');
         }
 
-        slug.bind('input propertychange', justifySlugWidth);
+        slug.on('input propertychange', justifySlugWidth);
         justifySlugWidth();
     }
 
@@ -169,7 +169,7 @@ $(document).ready(function() {
     });
 
     // 自动检测离开页
-    $(window).bind('beforeunload', function () {
+    $(window).on('beforeunload', function () {
         if (changed && !form.hasClass('submitting')) {
             return '<?php _e('内容已经改变尚未保存, 您确认要离开此页面吗?'); ?>';
         }
@@ -271,7 +271,7 @@ $(document).ready(function() {
             .attr('sandbox', 'allow-same-origin allow-scripts')
             .appendTo(document.body);
 
-        frame.load(function () {
+        frame.on('load', function () {
             frame.removeClass('preview-loading');
         });
 
@@ -289,7 +289,7 @@ $(document).ready(function() {
 
     $('#btn-cancel-preview').click(cancelPreview);
 
-    $(window).bind('message', function (e) {
+    $(window).on('message', function (e) {
         if (e.originalEvent.data === 'cancelPreview') {
             cancelPreview();
         }
@@ -341,4 +341,3 @@ $(document).ready(function() {
     });
 });
 </script>
-

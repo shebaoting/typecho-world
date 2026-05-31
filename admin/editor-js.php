@@ -114,7 +114,7 @@ $(document).ready(function () {
             }
 
             return '<div class="embed"><strong>'
-                + tag + '</strong> : ' + $.trim(src) + '</div>';
+                + tag + '</strong> : ' + src.trim() + '</div>';
         });
 
         return DOMPurify.sanitize(html, {USE_PROFILES: {html: true}});
@@ -127,7 +127,7 @@ $(document).ready(function () {
         if (count === 0) {
             reloadScroll(true);
         } else {
-            images.bind('load error', function () {
+            images.on('load error', function () {
                 count --;
 
                 if (count === 0) {
@@ -239,7 +239,7 @@ $(document).ready(function () {
         });
 
         // 剪贴板复制图片
-        textarea.bind('paste', function (e) {
+        textarea.on('paste', function (e) {
             const items = (e.clipboardData || e.originalEvent.clipboardData).items;
 
             for (const item of items) {

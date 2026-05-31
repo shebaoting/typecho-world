@@ -331,7 +331,7 @@ function scrollableEditor(el, preview) {
                 staticOffset = textarea.height() - iLastMousePos;
                 textarea.css('opacity', 0.25);
 
-                $(document).mousemove(performDrag).mouseup(endDrag);
+                $(document).on('mousemove', performDrag).on('mouseup', endDrag);
                 return false;
             }
 
@@ -354,7 +354,7 @@ function scrollableEditor(el, preview) {
 
             function endDrag(e) {
                 var h = textarea.outerHeight();
-                $(document).unbind('mousemove', performDrag).unbind('mouseup', endDrag);
+                $(document).off('mousemove', performDrag).off('mouseup', endDrag);
 
                 textarea.css('opacity', 1);
                 textarea.focus();
@@ -372,7 +372,7 @@ function scrollableEditor(el, preview) {
                 return { x: e.clientX + document.documentElement.scrollLeft, y: e.clientY + document.documentElement.scrollTop };
             }
 
-            r.bind('mousedown', {el : this}, startDrag);
+            r.on('mousedown', {el : this}, startDrag);
         });
     };
 
@@ -539,8 +539,8 @@ jQuery.tableDnD = {
         // Now we need to capture the mouse up and mouse move event
         // We can use bind so that we don't interfere with other event handlers
         jQuery(document)
-            .bind('mousemove', jQuery.tableDnD.mousemove)
-            .bind('mouseup', jQuery.tableDnD.mouseup);
+            .on('mousemove', jQuery.tableDnD.mousemove)
+            .on('mouseup', jQuery.tableDnD.mouseup);
 
         // Don't break the chain
         return this;
@@ -1059,10 +1059,10 @@ $.fn.extend({
 				input
 				.one("unmask", function() {
 					input
-						.unbind(".mask")
+						.off(".mask")
 						.removeData($.mask.dataName);
 				})
-				.bind("focus.mask", function() {
+				.on("focus.mask", function() {
 					clearTimeout(caretTimeoutId);
 					var pos,
 						moveCaret;
@@ -1079,14 +1079,14 @@ $.fn.extend({
 						}
 					}, 10);
 				})
-				.bind("blur.mask", function() {
+				.on("blur.mask", function() {
 					checkVal();
 					if (input.val() != focusText)
 						input.change();
 				})
-				.bind("keydown.mask", keydownEvent)
-				.bind("keypress.mask", keypressEvent)
-				.bind(pasteEventName, function() {
+				.on("keydown.mask", keydownEvent)
+				.on("keypress.mask", keypressEvent)
+				.on(pasteEventName, function() {
 					setTimeout(function() { 
 						var pos=checkVal(true);
 						input.caret(pos); 

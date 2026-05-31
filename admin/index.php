@@ -142,7 +142,7 @@ include 'common-js.php';
         }
 
         if (!!update) {
-            applyUpdate($.parseJSON(update));
+            applyUpdate(JSON.parse(update));
         } else {
             $.get('<?php $options->index('/action/ajax?do=checkVersion'); ?>', function (o, status, resp) {
                 applyUpdate(o);

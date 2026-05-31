@@ -10,6 +10,8 @@
   "scripts": {
     "build": "npm run build_js && npm run build_css",
     "build_js": "node build.js js",
+    "build_js:jquery4": "node build.js js_jquery4",
+    "build_js:vendor": "node build.js vendor_js",
     "build_css": "node build.js css",
     "build_css:theme": "node build.js theme_css"
   },
@@ -22,6 +24,12 @@
     "@picocss/pico": "^2.1.1",
     "chalk": "^5.6.2",
     "dompurify": "^3.4.7",
+    "jquery": "^3.7.1",
+    "jquery-migrate": "^4.0.2",
+    "jquery-migrate3": "npm:jquery-migrate@^3.6.0",
+    "jquery-ui": "^1.14.2",
+    "jquery-ui-timepicker-addon": "^1.6.3",
+    "jquery4": "npm:jquery@^4.0.0",
     "sass": "^1.100.0",
     "terser": "^5.48.0"
   }
