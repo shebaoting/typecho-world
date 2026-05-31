@@ -166,7 +166,8 @@ WHERE
         $handle,
         int $op = Db::READ,
         ?string $action = null,
-        ?string $table = null
+        ?string $table = null,
+        array $params = []
     );
 
     abstract public function quoteValue(string $string): string;

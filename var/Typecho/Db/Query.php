@@ -341,7 +341,7 @@ class Query
     {
         foreach ($rows as $key => $row) {
             $this->sqlPreBuild['rows'][$this->filterColumn($key)]
-                = is_null($row) ? 'NULL' : $this->adapter->quoteValue($row);
+                = is_null($row) ? 'NULL' : $this->quoteValue($row);
         }
         return $this;
     }
@@ -515,6 +515,28 @@ class Query
             } else {
                 return $matches[0];
             }
+        }, $query);
+    }
+
+    /**
+     * 为底层数据库驱动准备参数化查询语句
+     *
+     * @param string $query
+     * @param array $params
+     * @return string
+     */
+    public function prepareStatement(string $query, array &$params = []): string
+    {
+        $params = [];
+        $sourceParams = $this->params;
+
+        return preg_replace_callback("/#param:([0-9]+)#/", function ($matches) use ($sourceParams, &$params) {
+            if (array_key_exists($matches[1], $sourceParams)) {
+                $params[] = $sourceParams[$matches[1]];
+                return '?';
+            }
+
+            return $matches[0];
         }, $query);
     }
 

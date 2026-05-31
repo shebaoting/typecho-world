@@ -68,6 +68,7 @@ class SQLite implements Adapter
      * @param integer $op 数据库读写状态
      * @param string|null $action 数据库动作
      * @param string|null $table 数据表
+     * @param array $params 绑定参数
      * @return \SQLite3Result
      * @throws SQLException
      */
@@ -76,9 +77,14 @@ class SQLite implements Adapter
         $handle,
         int $op = Db::READ,
         ?string $action = null,
-        ?string $table = null
+        ?string $table = null,
+        array $params = []
     ): \SQLite3Result {
         if ($stm = $handle->prepare($query)) {
+            foreach (array_values($params) as $index => $value) {
+                $stm->bindValue($index + 1, $value, $this->getParamType($value));
+            }
+
             if ($resource = $stm->execute()) {
                 return $resource;
             }
@@ -86,6 +92,20 @@ class SQLite implements Adapter
 
         /** 数据库异常 */
         throw new SQLException($handle->lastErrorMsg(), $handle->lastErrorCode());
+    }
+
+    /**
+     * @param mixed $value
+     * @return int
+     */
+    private function getParamType($value): int
+    {
+        return match (true) {
+            is_int($value) => SQLITE3_INTEGER,
+            is_float($value) => SQLITE3_FLOAT,
+            is_null($value) => SQLITE3_NULL,
+            default => SQLITE3_TEXT,
+        };
     }
 
     /**

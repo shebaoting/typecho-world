@@ -40,6 +40,7 @@ class Pgsql extends Pdo
      * @param integer $op 数据库读写状态
      * @param string|null $action 数据库动作
      * @param string|null $table 数据表
+     * @param array $params 绑定参数
      * @return \PDOStatement
      * @throws SQLException
      */
@@ -48,10 +49,11 @@ class Pgsql extends Pdo
         $handle,
         int $op = Db::READ,
         ?string $action = null,
-        ?string $table = null
+        ?string $table = null,
+        array $params = []
     ): \PDOStatement {
         $this->prepareQuery($query, $handle, $action, $table);
-        return parent::query($query, $handle, $op, $action, $table);
+        return parent::query($query, $handle, $op, $action, $table, $params);
     }
 
     /**

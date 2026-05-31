@@ -34,7 +34,10 @@ CREATE TABLE `typecho_comments` (
   `parent` int(10) unsigned default '0',
   PRIMARY KEY  (`coid`),
   KEY `cid` (`cid`),
-  KEY `created` (`created`)
+  KEY `created` (`created`),
+  KEY `typecho_comments_status_created` (`status`,`created`),
+  KEY `typecho_comments_cid_status_created` (`cid`,`status`,`created`),
+  KEY `typecho_comments_owner_status_created` (`ownerId`,`status`,`created`)
 ) ENGINE=%engine%  DEFAULT CHARSET=%charset%;
 
 -- --------------------------------------------------------
@@ -63,7 +66,10 @@ CREATE TABLE `typecho_contents` (
   `parent` int(10) unsigned default '0',
   PRIMARY KEY  (`cid`),
   UNIQUE KEY `slug` (`slug`),
-  KEY `created` (`created`)
+  KEY `created` (`created`),
+  KEY `typecho_contents_type_status_created` (`type`,`status`,`created`),
+  KEY `typecho_contents_author_status_created` (`authorId`,`status`,`created`),
+  KEY `typecho_contents_parent_type` (`parent`,`type`)
 ) ENGINE=%engine%  DEFAULT CHARSET=%charset%;
 
 -- --------------------------------------------------------
@@ -100,7 +106,11 @@ CREATE TABLE `typecho_metas` (
   `order` int(10) unsigned default '0',
   `parent` int(10) unsigned default '0',
   PRIMARY KEY  (`mid`),
-  KEY `slug` (`slug`)
+  KEY `slug` (`slug`),
+  KEY `typecho_metas_type_slug` (`type`,`slug`),
+  KEY `typecho_metas_type_name` (`type`,`name`),
+  KEY `typecho_metas_type_order` (`type`,`order`),
+  KEY `typecho_metas_parent` (`parent`)
 ) ENGINE=%engine%  DEFAULT CHARSET=%charset%;
 
 -- --------------------------------------------------------
@@ -113,7 +123,8 @@ CREATE TABLE `typecho_options` (
   `name` varchar(32) NOT NULL,
   `user` int(10) unsigned NOT NULL default '0',
   `value` text,
-  PRIMARY KEY  (`name`,`user`)
+  PRIMARY KEY  (`name`,`user`),
+  KEY `typecho_options_user` (`user`)
 ) ENGINE=%engine% DEFAULT CHARSET=%charset%;
 
 -- --------------------------------------------------------
@@ -125,7 +136,20 @@ CREATE TABLE `typecho_options` (
 CREATE TABLE `typecho_relationships` (
   `cid` int(10) unsigned NOT NULL,
   `mid` int(10) unsigned NOT NULL,
-  PRIMARY KEY  (`cid`,`mid`)
+  PRIMARY KEY  (`cid`,`mid`),
+  KEY `typecho_relationships_mid` (`mid`)
+) ENGINE=%engine% DEFAULT CHARSET=%charset%;
+
+-- --------------------------------------------------------
+
+--
+-- 表的结构 `typecho_migrations`
+--
+
+CREATE TABLE `typecho_migrations` (
+  `name` varchar(128) NOT NULL,
+  `executed` int(10) unsigned NOT NULL default '0',
+  PRIMARY KEY (`name`)
 ) ENGINE=%engine% DEFAULT CHARSET=%charset%;
 
 -- --------------------------------------------------------

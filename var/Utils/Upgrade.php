@@ -3,6 +3,7 @@
 namespace Utils;
 
 use Typecho\Db;
+use Typecho\Db\Migration;
 use Widget\Options;
 
 /**
@@ -97,5 +98,36 @@ class Upgrade
                 }
             }
         }
+    }
+
+    /**
+     * @param Db $db
+     * @param Options $options
+     * @return string|null
+     * @throws \Typecho\Db\Exception
+     */
+    public static function v1_3_1(Db $db, Options $options): ?string
+    {
+        $migration = new Migration($db);
+
+        $ran = $migration->run('2026_05_31_core_indexes', function (Migration $migration) {
+            $migration->addIndex('table.contents', 'type_status_created', ['type', 'status', 'created']);
+            $migration->addIndex('table.contents', 'author_status_created', ['authorId', 'status', 'created']);
+            $migration->addIndex('table.contents', 'parent_type', ['parent', 'type']);
+
+            $migration->addIndex('table.comments', 'status_created', ['status', 'created']);
+            $migration->addIndex('table.comments', 'cid_status_created', ['cid', 'status', 'created']);
+            $migration->addIndex('table.comments', 'owner_status_created', ['ownerId', 'status', 'created']);
+
+            $migration->addIndex('table.metas', 'type_slug', ['type', 'slug']);
+            $migration->addIndex('table.metas', 'type_name', ['type', 'name']);
+            $migration->addIndex('table.metas', 'type_order', ['type', 'order']);
+            $migration->addIndex('table.metas', 'parent', ['parent']);
+
+            $migration->addIndex('table.relationships', 'mid', ['mid']);
+            $migration->addIndex('table.options', 'user', ['user']);
+        });
+
+        return $ran ? _t('已更新核心数据库索引') : null;
     }
 }

@@ -3,6 +3,7 @@
 namespace Widget;
 
 use Typecho\Common;
+use Typecho\Cache\Cache;
 use Typecho\Config;
 use Typecho\Db;
 use Typecho\Router;
@@ -152,22 +153,31 @@ class Options extends Base
         $options = [];
 
         if (isset($this->db)) {
-            $values = $this->db->fetchAll($this->db->select()->from('table.options')
-                ->where('user = 0'));
+            $cacheKey = self::cacheKey($this->db);
+            $cachedOptions = Cache::get()->get($cacheKey);
 
-            // finish install
-            if (empty($values)) {
-                $this->response->redirect(defined('__TYPECHO_ADMIN__')
-                    ? '../install.php?step=3' : 'install.php?step=3');
-            }
+            if (is_array($cachedOptions)) {
+                $options = $cachedOptions;
+            } else {
+                $values = $this->db->fetchAll($this->db->select()->from('table.options')
+                    ->where('user = 0'));
 
-            $options = array_column($values, 'value', 'name');
+                // finish install
+                if (empty($values)) {
+                    $this->response->redirect(defined('__TYPECHO_ADMIN__')
+                        ? '../install.php?step=3' : 'install.php?step=3');
+                }
 
-            /** 支持皮肤变量重载 */
-            $themeOptionsKey = 'theme:' . $options['theme'];
-            if (!empty($options[$themeOptionsKey])) {
-                $themeOptions = $this->tryDeserialize($options[$themeOptionsKey]);
-                $options = array_merge($options, $themeOptions);
+                $options = array_column($values, 'value', 'name');
+
+                /** 支持皮肤变量重载 */
+                $themeOptionsKey = 'theme:' . $options['theme'];
+                if (!empty($options[$themeOptionsKey])) {
+                    $themeOptions = $this->tryDeserialize($options[$themeOptionsKey]);
+                    $options = array_merge($options, $themeOptions);
+                }
+
+                Cache::get()->set($cacheKey, $options, self::cacheTtl());
             }
         } elseif (function_exists('install_get_default_options')) {
             $defaultOptions = install_get_default_options();
@@ -179,6 +189,23 @@ class Options extends Base
         }
 
         $this->push($options);
+    }
+
+    /**
+     * @param Db $db
+     * @return string
+     */
+    public static function cacheKey(Db $db): string
+    {
+        return 'options:' . sha1(__TYPECHO_ROOT_DIR__ . ':' . $db->getPrefix()) . ':global';
+    }
+
+    /**
+     * @return int|null
+     */
+    private static function cacheTtl(): ?int
+    {
+        return defined('__TYPECHO_CACHE_TTL__') ? (int) __TYPECHO_CACHE_TTL__ : null;
     }
 
     /**

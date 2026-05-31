@@ -78,13 +78,24 @@ class Pgsql implements Adapter
      * @param integer $op 数据库读写状态
      * @param string|null $action 数据库动作
      * @param string|null $table 数据表
+     * @param array $params 绑定参数
      * @return resource
      * @throws SQLException
      */
-    public function query(string $query, $handle, int $op = Db::READ, ?string $action = null, ?string $table = null)
-    {
+    public function query(
+        string $query,
+        $handle,
+        int $op = Db::READ,
+        ?string $action = null,
+        ?string $table = null,
+        array $params = []
+    ) {
         $this->prepareQuery($query, $handle, $action, $table);
-        if ($resource = pg_query($handle, $query)) {
+        $resource = empty($params)
+            ? pg_query($handle, $query)
+            : pg_query_params($handle, $this->prepareStatement($query), $params);
+
+        if ($resource) {
             return $resource;
         }
 
@@ -93,6 +104,20 @@ class Pgsql implements Adapter
             @pg_last_error($handle),
             pg_result_error_field(pg_get_result($handle), PGSQL_DIAG_SQLSTATE)
         );
+    }
+
+    /**
+     * @param string $query
+     * @return string
+     */
+    private function prepareStatement(string $query): string
+    {
+        $position = 0;
+
+        return preg_replace_callback('/\?/', function () use (&$position) {
+            $position++;
+            return '$' . $position;
+        }, $query);
     }
 
     /**

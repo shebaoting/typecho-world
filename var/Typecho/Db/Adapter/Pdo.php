@@ -92,6 +92,7 @@ abstract class Pdo implements Adapter
      * @param integer $op 数据库读写状态
      * @param string|null $action 数据库动作
      * @param string|null $table 数据表
+     * @param array $params 绑定参数
      * @return \PDOStatement
      * @throws SQLException
      */
@@ -100,12 +101,13 @@ abstract class Pdo implements Adapter
         $handle,
         int $op = Db::READ,
         ?string $action = null,
-        ?string $table = null
+        ?string $table = null,
+        array $params = []
     ): \PDOStatement {
         try {
             $this->lastTable = $table;
             $resource = $handle->prepare($query);
-            $resource->execute();
+            $resource->execute($params);
         } catch (\PDOException $e) {
             /** 数据库异常 */
             throw new SQLException($e->getMessage(), $e->getCode());

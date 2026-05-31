@@ -2,6 +2,7 @@
 
 namespace Typecho;
 
+use Typecho\Cache\Cache;
 use Typecho\Db\Adapter;
 use Typecho\Db\Query;
 use Typecho\Db\Exception as DbException;
@@ -388,18 +389,21 @@ class Db
         $handle = $this->selectDb($op);
 
         /** 如果是查询对象,则将其转换为查询语句 */
-        $sql = $query instanceof Query ? $query->prepare($query) : $query;
+        $params = [];
+        $sql = $query instanceof Query ? $query->prepareStatement($query, $params) : $query;
 
         /** 提交查询 */
-        $resource = $this->adapter->query($sql, $handle, $op, $action, $table);
+        $resource = $this->adapter->query($sql, $handle, $op, $action, $table, $params);
 
         if ($action) {
             //根据查询动作返回相应资源
             switch ($action) {
                 case self::UPDATE:
                 case self::DELETE:
+                    $this->flushCacheByTable($table);
                     return $this->adapter->affectedRows($resource, $handle);
                 case self::INSERT:
+                    $this->flushCacheByTable($table);
                     return $this->adapter->lastInsertId($resource, $handle);
                 case self::SELECT:
                 default:
@@ -408,6 +412,18 @@ class Db
         } else {
             //如果直接执行查询语句则返回资源
             return $resource;
+        }
+    }
+
+    /**
+     * 根据写入的数据表清理相关缓存
+     *
+     * @param string|null $table
+     */
+    private function flushCacheByTable(?string $table)
+    {
+        if ($table === $this->prefix . 'options') {
+            Cache::get()->deletePrefix('options:' . sha1(__TYPECHO_ROOT_DIR__ . ':' . $this->prefix) . ':');
         }
     }
 

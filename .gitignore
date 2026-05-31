@@ -27,6 +27,7 @@ config.rb
 prepros.config
 config.inc.*
 usr/uploads/
+usr/cache/
 usr/*.db
 usr/plugins/
 !usr/plugins/HelloWorld

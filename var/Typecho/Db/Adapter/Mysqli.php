@@ -112,6 +112,7 @@ class Mysqli implements Adapter
      * @param integer $op 数据库读写状态
      * @param string|null $action 数据库动作
      * @param string|null $table 数据表
+     * @param array $params 绑定参数
      * @throws SQLException
      */
     public function query(
@@ -119,9 +120,14 @@ class Mysqli implements Adapter
         $handle,
         int $op = Db::READ,
         ?string $action = null,
-        ?string $table = null
+        ?string $table = null,
+        array $params = []
     ) {
         try {
+            if (!empty($params)) {
+                return $this->executeStatement($query, $params);
+            }
+
             if ($resource = $this->dbLink->query($query)) {
                 return $resource;
             }
@@ -132,6 +138,84 @@ class Mysqli implements Adapter
 
         /** 数据库异常 */
         throw new SQLException($this->dbLink->error, $this->dbLink->errno);
+    }
+
+    /**
+     * 执行参数化查询
+     *
+     * @param string $query
+     * @param array $params
+     * @return \mysqli_result|\mysqli_stmt
+     * @throws SQLException
+     */
+    private function executeStatement(string $query, array $params)
+    {
+        $statement = $this->dbLink->prepare($query);
+
+        if (!$statement) {
+            throw new SQLException($this->dbLink->error, $this->dbLink->errno);
+        }
+
+        $types = '';
+        $references = [];
+
+        foreach ($params as $key => &$value) {
+            $types .= match (true) {
+                is_int($value) => 'i',
+                is_float($value) => 'd',
+                default => 's',
+            };
+            $references[$key] = &$value;
+        }
+
+        if (!$statement->bind_param($types, ...$references) || !$statement->execute()) {
+            throw new SQLException($statement->error, $statement->errno);
+        }
+
+        if ($statement->result_metadata()) {
+            $result = method_exists($statement, 'get_result') ? $statement->get_result() : false;
+            return $result ?: new MysqliResult($this->fetchStatementRows($statement));
+        }
+
+        return $statement;
+    }
+
+    /**
+     * @param \mysqli_stmt $statement
+     * @return array
+     */
+    private function fetchStatementRows(\mysqli_stmt $statement): array
+    {
+        $metadata = $statement->result_metadata();
+
+        if (!$metadata) {
+            return [];
+        }
+
+        $fields = $metadata->fetch_fields();
+        $values = [];
+        $refs = [];
+
+        foreach ($fields as $field) {
+            $values[$field->name] = null;
+            $refs[] = &$values[$field->name];
+        }
+
+        $statement->store_result();
+        $statement->bind_result(...$refs);
+
+        $rows = [];
+        while ($statement->fetch()) {
+            $row = [];
+
+            foreach ($values as $key => $value) {
+                $row[$key] = $value;
+            }
+
+            $rows[] = $row;
+        }
+
+        return $rows;
     }
 
     /**
@@ -154,6 +238,10 @@ class Mysqli implements Adapter
      */
     public function fetch($resource): ?array
     {
+        if ($resource instanceof MysqliResult) {
+            return $resource->fetchAssoc();
+        }
+
         return $resource->fetch_assoc();
     }
 
@@ -165,6 +253,10 @@ class Mysqli implements Adapter
      */
     public function fetchAll($resource): array
     {
+        if ($resource instanceof MysqliResult) {
+            return $resource->fetchAll();
+        }
+
         return $resource->fetch_all(MYSQLI_ASSOC);
     }
 
@@ -176,6 +268,10 @@ class Mysqli implements Adapter
      */
     public function fetchObject($resource): ?\stdClass
     {
+        if ($resource instanceof MysqliResult) {
+            return $resource->fetchObject();
+        }
+
         return $resource->fetch_object();
     }
 
