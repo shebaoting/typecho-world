@@ -2,6 +2,9 @@
 
 namespace Typecho;
 
+use Typecho\Event\Dispatcher;
+use Typecho\Event\Event;
+use Typecho\Plugin\EventProviderInterface;
 use Typecho\Plugin\Exception as PluginException;
 
 /**
@@ -26,7 +29,21 @@ class Plugin
      *
      * @var array
      */
-    private static array $instances;
+    private static array $instances = [];
+
+    /**
+     * 事件分发器
+     *
+     * @var Dispatcher|null
+     */
+    private static ?Dispatcher $dispatcher = null;
+
+    /**
+     * 插件目录
+     *
+     * @var string|null
+     */
+    private static ?string $pluginDir = null;
 
     /**
      * 临时存储变量
@@ -76,13 +93,76 @@ class Plugin
      *
      * @param array $plugins 插件列表
      */
-    public static function init(array $plugins)
+    public static function init(array $plugins, ?string $pluginDir = null)
     {
         $plugins['activated'] = array_key_exists('activated', $plugins) ? $plugins['activated'] : [];
         $plugins['handles'] = array_key_exists('handles', $plugins) ? $plugins['handles'] : [];
+        $plugins['events'] = array_key_exists('events', $plugins) ? $plugins['events'] : [];
 
         /** 初始化变量 */
         self::$plugin = $plugins;
+        self::$pluginDir = $pluginDir ?: __TYPECHO_ROOT_DIR__ . __TYPECHO_PLUGIN_DIR__;
+        self::$instances = [];
+        self::rebuildDispatcher();
+    }
+
+    /**
+     * 获取全局事件分发器
+     *
+     * @return Dispatcher
+     */
+    public static function events(): Dispatcher
+    {
+        if (!isset(self::$dispatcher)) {
+            self::$dispatcher = new Dispatcher();
+        }
+
+        return self::$dispatcher;
+    }
+
+    /**
+     * 注册事件监听器
+     *
+     * @param string $event
+     * @param callable $listener
+     * @param int $priority
+     * @param bool $persist
+     */
+    public static function on(string $event, callable $listener, int $priority = 0, bool $persist = false)
+    {
+        self::events()->listen($event, $listener, $priority);
+
+        if (!$persist) {
+            return;
+        }
+
+        if (!isset(self::$plugin['events'][$event])) {
+            self::$plugin['events'][$event] = [];
+        }
+
+        if (!isset(self::$tmp['events'][$event])) {
+            self::$tmp['events'][$event] = [];
+        }
+
+        $weight = $priority;
+        while (isset(self::$plugin['events'][$event][(string) $weight])) {
+            $weight += 0.001;
+        }
+
+        self::$plugin['events'][$event][(string) $weight] = $listener;
+        self::$tmp['events'][$event][] = $listener;
+    }
+
+    /**
+     * 生成事件名称
+     *
+     * @param string $handle
+     * @param string $component
+     * @return string
+     */
+    public static function eventName(string $handle, string $component): string
+    {
+        return Common::nativeClassName($handle) . ':' . $component;
     }
 
     /**
@@ -105,6 +185,7 @@ class Plugin
     {
         self::$plugin['activated'][$pluginName] = self::$tmp;
         self::$tmp = [];
+        self::rebuildDispatcher();
     }
 
     /**
@@ -130,8 +211,108 @@ class Plugin
             }
         }
 
+        /** 去掉所有相关新事件回调函数 */
+        if (
+            isset(self::$plugin['activated'][$pluginName]['events'])
+            && is_array(self::$plugin['activated'][$pluginName]['events'])
+        ) {
+            foreach (self::$plugin['activated'][$pluginName]['events'] as $event => $events) {
+                self::$plugin['events'][$event] = self::pluginHandlesDiff(
+                    empty(self::$plugin['events'][$event]) ? [] : self::$plugin['events'][$event],
+                    empty($events) ? [] : $events
+                );
+                if (empty(self::$plugin['events'][$event])) {
+                    unset(self::$plugin['events'][$event]);
+                }
+            }
+        }
+
         /** 禁用当前插件 */
         unset(self::$plugin['activated'][$pluginName]);
+        self::rebuildDispatcher();
+    }
+
+    /**
+     * 重新构建运行时事件分发器
+     */
+    private static function rebuildDispatcher()
+    {
+        self::$dispatcher = new Dispatcher();
+
+        foreach (self::$plugin['handles'] ?? [] as $componentKey => $callbacks) {
+            foreach ($callbacks as $weight => $callback) {
+                if (is_callable($callback)) {
+                    self::registerLegacyHandle($componentKey, $callback, self::legacyPriority($weight));
+                }
+            }
+        }
+
+        foreach (self::$plugin['events'] ?? [] as $event => $callbacks) {
+            foreach ($callbacks as $priority => $callback) {
+                if (is_callable($callback)) {
+                    self::events()->listen($event, $callback, (int) $priority);
+                }
+            }
+        }
+
+        self::registerEventProviders();
+    }
+
+    /**
+     * 注册新插件 API 的事件 provider
+     */
+    private static function registerEventProviders()
+    {
+        if (!isset(self::$pluginDir)) {
+            return;
+        }
+
+        foreach (array_keys(self::$plugin['activated'] ?? []) as $pluginName) {
+            try {
+                [$pluginFileName, $className] = self::portal($pluginName, self::$pluginDir);
+            } catch (PluginException $e) {
+                continue;
+            }
+
+            require_once $pluginFileName;
+
+            if (class_exists($className) && is_subclass_of($className, EventProviderInterface::class)) {
+                call_user_func([$className, 'register'], self::events());
+            }
+        }
+    }
+
+    /**
+     * 注册旧插件回调为运行时事件监听器
+     *
+     * @param string $componentKey
+     * @param callable $callback
+     * @param int $priority
+     */
+    private static function registerLegacyHandle(string $componentKey, callable $callback, int $priority)
+    {
+        self::events()->listen($componentKey, function (Event $event) use ($callback) {
+            if ($event->isFilter()) {
+                $args = $event->get('args', []);
+                $current = $event->getValue();
+                $result = call_user_func_array($callback, array_merge([$current], $args, [$current]));
+                $event->setValue($result);
+                return $result;
+            }
+
+            $result = call_user_func_array($callback, $event->get('args', []));
+            $event->setResult($result);
+            return $result;
+        }, $priority);
+    }
+
+    /**
+     * @param int|string $weight
+     * @return int
+     */
+    private static function legacyPriority($weight): int
+    {
+        return (int) round(-floatval($weight) * 1000);
     }
 
     /**
@@ -190,7 +371,8 @@ class Plugin
             'activate' => false,
             'deactivate' => false,
             'config' => false,
-            'personalConfig' => false
+            'personalConfig' => false,
+            'eventProvider' => false
         ];
 
         $map = [
@@ -247,10 +429,16 @@ class Plugin
                     case T_DOC_COMMENT:
                         break;
                     case T_STRING:
+                    case T_NAME_QUALIFIED:
                         $string = strtolower($token[1]);
+                        $string = substr($string, strrpos('\\' . $string, '\\'));
                         switch ($string) {
                             case 'typecho_plugin_interface':
                             case 'plugininterface':
+                                $isInClass = $isClass;
+                                break;
+                            case 'eventproviderinterface':
+                                $info['eventProvider'] = true;
                                 $isInClass = $isClass;
                                 break;
                             case 'activate':
@@ -303,6 +491,11 @@ class Plugin
             }
         }
 
+        if ($info['eventProvider']) {
+            $info['activate'] = true;
+            $info['deactivate'] = true;
+        }
+
         return $info;
     }
 
@@ -346,6 +539,37 @@ class Plugin
         }
 
         return version_compare(Common::VERSION, $version, '>=');
+    }
+
+    /**
+     * 判断是否为可用插件类
+     *
+     * @param string $className
+     * @return bool
+     */
+    public static function isPluginClass(string $className): bool
+    {
+        return class_exists($className)
+            && (is_subclass_of($className, \Typecho\Plugin\PluginInterface::class)
+                || is_subclass_of($className, EventProviderInterface::class)
+                || method_exists($className, 'activate'));
+    }
+
+    /**
+     * 调用插件静态方法,不存在则跳过
+     *
+     * @param string $className
+     * @param string $method
+     * @param mixed ...$args
+     * @return mixed
+     */
+    public static function callPluginMethod(string $className, string $method, ...$args)
+    {
+        if (!method_exists($className, $method)) {
+            return null;
+        }
+
+        return call_user_func_array([$className, $method], $args);
     }
 
     /**
@@ -424,6 +648,7 @@ class Plugin
         self::$tmp['handles'][$component][] = $value;
 
         ksort(self::$plugin['handles'][$component], SORT_NUMERIC);
+        self::registerLegacyHandle($component, $value, self::legacyPriority($weight));
     }
 
     /**
@@ -437,18 +662,19 @@ class Plugin
     {
         $componentKey = $this->handle . ':' . $component;
 
-        if (!isset(self::$plugin['handles'][$componentKey])) {
+        if (!self::events()->hasListeners($componentKey)) {
             return null;
         }
 
-        $return = null;
         $this->signal = true;
+        $event = self::events()->dispatch($componentKey, [
+            'handle'    => $this->handle,
+            'component' => $component,
+            'args'      => $args,
+            'plugin'    => $this
+        ]);
 
-        foreach (self::$plugin['handles'][$componentKey] as $callback) {
-            $return = call_user_func_array($callback, $args);
-        }
-
-        return $return;
+        return $event->getResult();
     }
 
     /**
@@ -463,19 +689,18 @@ class Plugin
     {
         $componentKey = $this->handle . ':' . $component;
 
-        if (!isset(self::$plugin['handles'][$componentKey])) {
+        if (!self::events()->hasListeners($componentKey)) {
             return $value;
         }
 
-        $result = $value;
         $this->signal = true;
-
-        foreach (self::$plugin['handles'][$componentKey] as $callback) {
-            $currentArgs = array_merge([$result], $args, [$result]);
-            $result = call_user_func_array($callback, $currentArgs);
-        }
-
-        return $result;
+        return self::events()->filter($componentKey, $value, [
+            'handle'    => $this->handle,
+            'component' => $component,
+            'args'      => $args,
+            'original'  => $value,
+            'plugin'    => $this
+        ]);
     }
 
     /**

@@ -102,7 +102,7 @@ class Init extends Widget
         Router::setRoutes($options->routingTable);
 
         /** 初始化插件 */
-        Plugin::init($options->plugins);
+        Plugin::init($options->plugins, $options->pluginDir);
 
         /** 初始化回执 */
         $this->response->setCharset($options->charset);

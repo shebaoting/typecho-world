@@ -33,6 +33,40 @@ define('__TYPECHO_CACHE_DIR__', __TYPECHO_ROOT_DIR__ . '/usr/cache');
 define('__TYPECHO_CACHE_TTL__', 3600);
 ```
 
+## Plugin Events
+
+The legacy plugin API is still supported:
+
+```php
+\Typecho\Plugin::factory('Widget\Archive')->beforeRender = [Plugin::class, 'beforeRender'];
+```
+
+New plugins can register runtime listeners through an event provider:
+
+```php
+use Typecho\Event\Dispatcher;
+use Typecho\Event\Event;
+use Typecho\Plugin as TypechoPlugin;
+use Typecho\Plugin\EventProviderInterface;
+
+class Plugin implements EventProviderInterface
+{
+    public static function register(Dispatcher $events)
+    {
+        $events->listen(
+            TypechoPlugin::eventName('Widget\Archive', 'title'),
+            function (Event $event) {
+                return $event->getValue() . ' - Typecho';
+            }
+        );
+    }
+}
+```
+
+Event listeners receive a `Typecho\Event\Event` object. For filter events, return the next value or call
+`$event->setValue()`. For action events, return a result or call `$event->setResult()`.
+Use `$event->stopPropagation()` when later listeners should not run.
+
 ## Screenshots
 
 ![Typecho](https://typecho.org/usr/themes/bluecode/img/screenshot/st1.png)

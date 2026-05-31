@@ -103,13 +103,12 @@ class Helper
 
             /** 判断实例化是否成功 */
             if (
-                !isset($activatedPlugins[$pluginName]) || !class_exists($className)
-                || !method_exists($className, 'deactivate')
+                !isset($activatedPlugins[$pluginName]) || !Plugin::isPluginClass($className)
             ) {
                 throw new Widget\Exception(_t('无法禁用插件'), 500);
             }
 
-            call_user_func([$className, 'deactivate']);
+            Plugin::callPluginMethod($className, 'deactivate');
         } catch (\Exception $e) {
             //nothing to do
         }

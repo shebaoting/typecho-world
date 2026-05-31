@@ -55,14 +55,13 @@ class Edit extends Options implements ActionInterface
 
             /** 判断实例化是否成功 */
             if (
-                isset($activatedPlugins[$pluginName]) || !class_exists($className)
-                || !method_exists($className, 'activate')
+                isset($activatedPlugins[$pluginName]) || !Plugin::isPluginClass($className)
             ) {
                 throw new Exception(_t('无法启用插件'), 500);
             }
 
             try {
-                $result = call_user_func([$className, 'activate']);
+                $result = Plugin::callPluginMethod($className, 'activate');
                 Plugin::activate($pluginName);
                 $this->update(
                     ['value' => json_encode(Plugin::export())],
@@ -75,10 +74,10 @@ class Edit extends Options implements ActionInterface
             }
 
             $form = new Form();
-            call_user_func([$className, 'config'], $form);
+            Plugin::callPluginMethod($className, 'config', $form);
 
             $personalForm = new Form();
-            call_user_func([$className, 'personalConfig'], $personalForm);
+            Plugin::callPluginMethod($className, 'personalConfig', $personalForm);
 
             $options = $form->getValues();
             $personalOptions = $personalForm->getValues();
@@ -119,6 +118,7 @@ class Edit extends Options implements ActionInterface
     {
         /** 获取插件入口 */
         [$pluginFileName, $className] = Plugin::portal($pluginName, $this->options->pluginDir);
+        require_once $pluginFileName;
 
         if (!$isInit && method_exists($className, 'configCheck')) {
             $result = call_user_func([$className, 'configCheck'], $settings);
@@ -236,14 +236,13 @@ class Edit extends Options implements ActionInterface
 
             /** 判断实例化是否成功 */
             if (
-                !isset($activatedPlugins[$pluginName]) || !class_exists($className)
-                || !method_exists($className, 'deactivate')
+                !isset($activatedPlugins[$pluginName]) || !Plugin::isPluginClass($className)
             ) {
                 throw new Exception(_t('无法禁用插件'), 500);
             }
 
             try {
-                $result = call_user_func([$className, 'deactivate']);
+                $result = Plugin::callPluginMethod($className, 'deactivate');
             } catch (Plugin\Exception $e) {
                 /** 截获异常 */
                 Notice::alloc()->set($e->getMessage(), 'error');
