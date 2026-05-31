@@ -1,71 +1,54 @@
-const sass = require('node-sass'),
-    color = require('chalk'),
-    fs = require('fs'),
-    SpriteMagicImporter = require('sprite-magic-importer'),
-    UglifyJS = require("uglify-js"),
-    srcDir = __dirname + '/../admin/src',
-    distDir = __dirname + '/../admin',
-    themeDir = __dirname + '/../usr/themes/classic-22',
-    action = process.argv.pop();
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import chalk from 'chalk';
+import * as sass from 'sass';
+import { minify } from 'terser';
 
-let spriteImporter = SpriteMagicImporter({
-    sass_dir: srcDir,
-    images_dir: srcDir + '/img',
-    generated_images_dir: distDir + '/img',
-    http_stylesheets_path: '.',
-    http_generated_images_path: 'img',
-    use_cache: false,
-    cache_dir: __dirname + '/tmp',
-
-    // spritesmith options
-    spritesmith: {
-        algorithm: 'top-down',
-        padding: 0
-    },
-
-    // imagemin-pngquant options
-    pngquant: {
-        quality: 75,
-        speed: 10
-    }
-});
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const srcDir = path.resolve(__dirname, '../admin/src');
+const distDir = path.resolve(__dirname, '../admin');
+const themeDir = path.resolve(__dirname, '../usr/themes/classic-22');
+const action = process.argv.at(-1);
 
 function buildSass(file, dist, sassDir)
 {
-    let outFile = dist + '/' + file.split('.')[0] + '.css';
-    console.log(color.green('processing ' + file));
+    const outFile = path.join(dist, file.split('.')[0] + '.css');
+    console.log(chalk.green('processing ' + file));
 
-    sass.render({
-        file: sassDir + '/' + file,
-        outFile: outFile,
-        includePaths: [sassDir],
-        outputStyle: 'compressed',
-        importer: spriteImporter
-    }, function (error, result) {
-        if (error) {
-            console.error(color.red('Error: ' + error.message));
-            console.error(color.red('File: ' + error.file + ' [Line:' + error.line + ']'
-                + '[Col:' + error.column + ']'));
-        } else {
-            fs.writeFileSync(outFile, result.css.toString());
-        }
+    const result = sass.compile(path.join(sassDir, file), {
+        loadPaths: [sassDir],
+        style: 'compressed',
+        quietDeps: true,
+        silenceDeprecations: ['import', 'global-builtin', 'color-functions', 'slash-div', 'if-function']
     });
+
+    fs.mkdirSync(path.dirname(outFile), {recursive: true});
+    fs.writeFileSync(outFile, result.css);
 }
 
-function minifyJs(file, dist)
+async function minifyJs(file, dist)
 {
-    console.log(color.green('minify ' + file));
-    let code = {};
-    code[file] = fs.readFileSync(srcDir + '/js/' + file).toString('utf8');
+    console.log(chalk.green('minify ' + file));
+    const code = {};
+    const outFile = path.join(dist, file);
+    code[file] = fs.readFileSync(path.join(srcDir, 'js', file), 'utf8');
+    const result = await minify(code, {
+        format: {
+            comments: /^!|@preserve|@license|@cc_on/i
+        }
+    });
 
-    fs.writeFileSync(
-        dist + '/' + file,
-        UglifyJS.minify(code).code
-    );
+    fs.mkdirSync(path.dirname(outFile), {recursive: true});
+    fs.writeFileSync(outFile, result.code);
 }
 
 function listFiles(dir, regExp)
 {
+    if (!fs.existsSync(dir)) {
+        return [];
+    }
+
     let files = fs.readdirSync(dir), result = [];
 
     files.map(function (file) {
@@ -77,24 +60,33 @@ function listFiles(dir, regExp)
     return result;
 }
 
-if (action === 'css') {
-    console.log(color.blue('build css'));
+async function main()
+{
+    if (action === 'css') {
+        console.log(chalk.blue('build css'));
 
-    listFiles(srcDir + '/scss', /^[a-z0-9-]+\.scss$/).forEach(function (file) {
-        buildSass(file, distDir + '/css', srcDir + '/scss');
-    });
-} else if (action === 'js') {
-    console.log(color.blue('build js'));
+        listFiles(path.join(srcDir, 'scss'), /^[a-z0-9-]+\.scss$/).forEach(function (file) {
+            buildSass(file, path.join(distDir, 'css'), path.join(srcDir, 'scss'));
+        });
+    } else if (action === 'js') {
+        console.log(chalk.blue('build js'));
 
-    listFiles(srcDir + '/js', /^[-\w]+\.js$/).forEach(function (file) {
-        minifyJs(file, distDir + '/js');
-    });
-} else if (action === 'theme_css') {
-    console.log(color.blue('build theme css'));
+        for (const file of listFiles(path.join(srcDir, 'js'), /^[-\w]+\.js$/)) {
+            await minifyJs(file, path.join(distDir, 'js'));
+        }
+    } else if (action === 'theme_css') {
+        console.log(chalk.blue('build theme css'));
 
-    listFiles(themeDir + '/static/scss', /^[a-z0-9-]+\.scss$/).forEach(function (file) {
-        buildSass(file, themeDir + '/static/css', themeDir + '/static/scss');
-    });
-} else {
-    console.log(color.red('Please choose correct action.'));
+        listFiles(path.join(themeDir, 'static/scss'), /^[a-z0-9-]+\.scss$/).forEach(function (file) {
+            buildSass(file, path.join(themeDir, 'static/css'), path.join(themeDir, 'static/scss'));
+        });
+    } else {
+        console.log(chalk.red('Please choose correct action.'));
+        process.exitCode = 1;
+    }
 }
+
+main().catch(function (error) {
+    console.error(chalk.red(error.stack || error.message));
+    process.exitCode = 1;
+});

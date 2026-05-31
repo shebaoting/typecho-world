@@ -9,6 +9,17 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 24
+        cache: npm
+        cache-dependency-path: tools/package-lock.json
+    - name: Build admin assets
+      run: |
+        npm ci
+        npm run build
+      working-directory: tools
     - name: Build
       run: |
         mkdir build

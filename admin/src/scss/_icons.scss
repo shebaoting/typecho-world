@@ -1,71 +1,25 @@
 /**
- * icons
+ * Icons
  */
-@import "icons/*.png";
-@include all-icons-sprites(true);
+$icon-path: "../img/icons";
 
-@media
-(-webkit-min-device-pixel-ratio: 2),
-(min-resolution: 192dpi) {
-  @import "icons/*@2x.png";
-  @include all-icons-sprites();
-
-  @mixin icon-style($type, $name) {
-    .#{$type}-#{$name} {
-      @if $type == i {
-        @include icons-sprite(icon-#{$name});
-      } @else {
-        @include icons-sprite(#{mime}-#{$name});
-      }
-    }
-  }
-
-  @include icon-style(i, edit);
-  @include icon-style(i, delete);
-  @include icon-style(i, upload);
-  @include icon-style(i, upload-active);
-  @include icon-style(i, exlink);
-  @include icon-style(mime, office);
-  @include icon-style(mime, text);
-  @include icon-style(mime, image);
-  @include icon-style(mime, html);
-  @include icon-style(mime, archive);
-  @include icon-style(mime, application);
-  @include icon-style(mime, audio);
-  @include icon-style(mime, script);
-  @include icon-style(mime, video);
-  @include icon-style(mime, unknow);
+@mixin icon-mask($name) {
+  background-color: currentColor;
+  background-image: none;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  -webkit-mask: url("#{$icon-path}/#{$name}.svg") center / contain no-repeat;
+  mask: url("#{$icon-path}/#{$name}.svg") center / contain no-repeat;
 }
-
-/*
-@mixin sprite-background($name) {
-  // background-image: sprite-url($sprites);
-  // background-position: sprite-position($sprites, $name);
-  @include icons-sprite($name);
-  // background-repeat: no-repeat;
-  // display: block;
-  // height: image-height(sprite-file($sprites, $name));
-  // width: image-width(sprite-file($sprites, $name));
-  @media 
-  (-webkit-min-device-pixel-ratio: 2), 
-  (min-resolution: 192dpi) {
-    @include icons-2x-sprite($name);
-    // Workaround for https://gist.github.com/2140082
-    //@if (sprite-position($sprites, $name) != sprite-position($sprites-retina, $name)) {
-    //  $ypos: round(nth(sprite-position($sprites-retina, $name), 2) / 2);
-    //  background-position: 0 $ypos;
-    //}
-    // Hard coded width of the normal sprite image. There must be a smarter way to do this.
-    // @include background-size(auto 256px);
-    // background-image: sprite-url($sprites-retina);
-  }
-}
- */
 
 %i-base {
   display: inline-block;
   vertical-align: text-bottom;
   text-indent: -9999em;
+  overflow: hidden;
+  flex: 0 0 auto;
+
   &:hover {
     opacity: 0.75;
   }
@@ -83,29 +37,40 @@
   height: 24px;
 }
 
+@mixin action-icon($name) {
+  @extend %i-16;
+  @include icon-mask("icon-#{$name}");
+}
+
+@mixin mime-icon($name) {
+  @extend %i-16;
+  @include icon-mask("mime-#{$name}");
+  color: #999;
+}
+
 .i-edit {
-  @extend %i-16;
-  @include icons-sprite(icon-edit);
+  @include action-icon(edit);
+  color: #070;
 }
+
 .i-delete {
-  @extend %i-16;
-  @include icons-sprite(icon-delete);
+  @include action-icon(delete);
+  color: #B94A48;
 }
-
-
-// 大号上传按钮
 
 .i-upload {
   @extend %i-24;
-  @include icons-sprite(icon-upload);
+  @include icon-mask(icon-upload);
+  color: #999;
 }
 
 .i-upload-active {
   @extend %i-24;
-  @include icons-sprite(icon-upload-active);
+  @include icon-mask(icon-upload-active);
+  color: #467B96;
 }
 
-// 小箭头
+// Carets
 .i-caret-up, .i-caret-down, .i-caret-left, .i-caret-right {
   display: inline-block;
   border-style: solid;
@@ -126,65 +91,54 @@
 }
 
 .i-exlink {
-  @extend %i-16;
-  @include icons-sprite(icon-exlink);
+  @include action-icon(exlink);
+  color: #467B96;
 }
 
-
-/* 文件类型图标 */
+/* File type icons */
 
 .mime-office {
-  @extend %i-16;
-  @include icons-sprite(mime-office);
+  @include mime-icon(office);
 }
 
 .mime-text {
-  @extend %i-16;
-  @include icons-sprite(mime-text);
+  @include mime-icon(text);
 }
 
 .mime-image {
-  @extend %i-16;
-  @include icons-sprite(mime-image);
+  @include mime-icon(image);
 }
 
 .mime-html {
-  @extend %i-16;
-  @include icons-sprite(mime-html);
+  @include mime-icon(html);
 }
 
 .mime-archive {
-  @extend %i-16;
-  @include icons-sprite(mime-archive);
+  @include mime-icon(archive);
 }
 
 .mime-application {
-  @extend %i-16;
-  @include icons-sprite(mime-application);
+  @include mime-icon(application);
 }
 
 .mime-audio {
-  @extend %i-16;
-  @include icons-sprite(mime-audio);
+  @include mime-icon(audio);
 }
 
 .mime-script {
-  @extend %i-16;
-  @include icons-sprite(mime-script);
+  @include mime-icon(script);
 }
 
 .mime-video {
-  @extend %i-16;
-  @include icons-sprite(mime-video);
+  @include mime-icon(video);
 }
 
 .mime-unknow {
-  @extend %i-16;
-  @include icons-sprite(mime-unknow);
+  @include mime-icon(unknow);
 }
 
 
-/* Logo 图标 */
+/* Logo icons */
 .i-logo, .i-logo-s {
   width: 169px;
   height: 40px;
@@ -202,4 +156,3 @@
   height: 26px;
   background-size: auto 26px;
 }
-

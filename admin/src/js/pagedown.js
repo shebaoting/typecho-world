@@ -1943,7 +1943,7 @@ else
     // Cached so we don't have to keep traversing the DOM.
     // Also holds ieCachedRange and ieCachedScrollTop, where necessary; working around
     // this issue:
-    // Internet explorer has problems with CSS sprite buttons that use HTML
+    // Internet explorer has problems with CSS icon buttons that use HTML
     // lists.  When you click on the background image "button", IE will
     // select the non-existent link text and discard the selection in the
     // textarea.  The solution to this is to cache the textarea selection

@@ -20,6 +20,7 @@ Typecho is released under the GNU General Public License 2.0.
   * MariaDB or MySQL 5.5.3 or higher
   * SQLite 3.7.11 or higher
   * PostgreSQL 9.1 or higher
+* Node.js 24.0.0 or higher (for building admin assets)
 
 ## Screenshots
 

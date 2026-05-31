@@ -34,12 +34,32 @@ jobs:
         composer lint
     - name: Static analysis
       run: composer analyse
+  assets:
+    name: Node 24 Asset Build
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, 'skip ci') }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 24
+        cache: npm
+        cache-dependency-path: tools/package-lock.json
+    - name: Install Node dependencies
+      run: npm ci
+      working-directory: tools
+    - name: Build admin assets
+      run: npm run build
+      working-directory: tools
   build:
     name: Typecho Build
     runs-on: ubuntu-latest
     if: ${{ !contains(github.event.head_commit.message, 'skip ci') && github.event_name != 'pull_request' }}
     needs:
         - php
+        - assets
     steps:
     - name: Checkout code
       uses: actions/checkout@v4

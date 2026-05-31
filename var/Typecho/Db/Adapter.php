@@ -60,9 +60,17 @@ interface Adapter
      * @param integer $op 数据库读写状态
      * @param string|null $action 数据库动作
      * @param string|null $table 数据表
+     * @param array $params 绑定参数
      * @return resource
      */
-    public function query(string $query, $handle, int $op = Db::READ, ?string $action = null, ?string $table = null);
+    public function query(
+        string $query,
+        $handle,
+        int $op = Db::READ,
+        ?string $action = null,
+        ?string $table = null,
+        array $params = []
+    );
 
     /**
      * 将数据查询的其中一行作为数组取出,其中字段名对应数组键值
