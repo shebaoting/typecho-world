@@ -168,7 +168,7 @@ namespace Typecho {
     class Common
     {
         /** 程序版本 */
-        public const VERSION = '1.3.9';
+        public const VERSION = '1.3.13';
 
         /**
          * 将路径转化为链接

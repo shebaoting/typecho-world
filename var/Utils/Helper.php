@@ -311,7 +311,7 @@ class Helper
      * @param string $title 面板标题
      * @param string $subTitle 面板副标题
      * @param string $level 进入权限
-     * @param boolean $hidden 是否隐藏
+     * @param boolean|string $hidden 是否隐藏, 传入 silent 时即便当前页面也不显示在菜单中
      * @param string $addLink 新增项目链接, 会显示在页面标题之后
      * @return integer
      */
@@ -321,7 +321,7 @@ class Helper
         string $title,
         string $subTitle,
         string $level,
-        bool $hidden = false,
+        bool|string $hidden = false,
         string $addLink = ''
     ): int {
         $panelTable = self::options()->panelTable;

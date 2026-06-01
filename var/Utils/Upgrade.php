@@ -334,6 +334,46 @@ class Upgrade
     }
 
     /**
+     * @param Db $db
+     * @param Options $options
+     * @return string|null
+     */
+    public static function v1_3_10(Db $db, Options $options): ?string
+    {
+        return _t('已开放后台页面标题扩展点');
+    }
+
+    /**
+     * @param Db $db
+     * @param Options $options
+     * @return string|null
+     */
+    public static function v1_3_11(Db $db, Options $options): ?string
+    {
+        return _t('已优化应用中心分组布局与插件面板隐藏能力');
+    }
+
+    /**
+     * @param Db $db
+     * @param Options $options
+     * @return string|null
+     */
+    public static function v1_3_12(Db $db, Options $options): ?string
+    {
+        return _t('已优化应用中心首页布局与资源加载');
+    }
+
+    /**
+     * @param Db $db
+     * @param Options $options
+     * @return string|null
+     */
+    public static function v1_3_13(Db $db, Options $options): ?string
+    {
+        return _t('已优化应用中心首页与后台按钮对齐');
+    }
+
+    /**
      * @param array $routingTable
      * @param string $before
      * @param array $routes

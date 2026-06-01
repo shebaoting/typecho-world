@@ -31,11 +31,12 @@ config.inc.*
 usr/uploads/
 usr/cache/
 usr/*.db
-usr/plugins/
-!usr/plugins/HelloWorld
+usr/plugins/*
+!usr/plugins/AppMarket/
+!usr/plugins/AppMarket/**
 usr/themes/*
 !usr/themes/default
 !usr/themes/classic-22
 node_modules/
 tools/tmp/
-vendor/
+usr/plugins/
