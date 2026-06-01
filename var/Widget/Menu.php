@@ -90,10 +90,9 @@ class Menu extends Base
             [
                 [_t('概要'), _t('网站概要'), 'index.php', 'subscriber'],
                 [_t('个人设置'), _t('个人设置'), 'profile.php', 'subscriber'],
-                [_t('插件'), _t('插件管理'), 'plugins.php', 'administrator'],
+                [_t('应用'), _t('应用管理'), 'applications.php', 'administrator'],
                 [[Config::class, 'getMenuTitle'], [Config::class, 'getMenuTitle'], 'options-plugin.php?config=', 'administrator', true],
-                [_t('外观'), _t('网站外观'), 'themes.php', 'administrator'],
-                [_t('导航菜单'), _t('导航菜单'), 'navigation.php', 'administrator'],
+                [_t('导航菜单'), _t('导航菜单'), 'navigation.php', 'administrator', 'silent'],
                 [[Files::class, 'getMenuTitle'], [Files::class, 'getMenuTitle'], 'theme-editor.php', 'administrator', true],
                 [_t('设置外观'), _t('设置外观'), 'options-theme.php', 'administrator', true],
                 [_t('备份'), _t('备份'), 'backup.php', 'administrator'],
@@ -213,7 +212,7 @@ class Menu extends Base
                     $validate = false;
                 }
 
-                if ($hidden && $validate) {
+                if (true === $hidden && $validate) {
                     $hidden = false;
                 }
 

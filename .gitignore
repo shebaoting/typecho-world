@@ -20,6 +20,8 @@
 *.mo
 *.po
 *.pot
+!usr/langs/
+!usr/langs/en_US.mo
 .smbdelete*
 *.sublime*
 .sass-cache

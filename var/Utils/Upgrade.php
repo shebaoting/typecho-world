@@ -5,6 +5,7 @@ namespace Utils;
 use Typecho\Common;
 use Typecho\Db;
 use Typecho\Db\Migration;
+use Typecho\Language;
 use Widget\Options;
 
 /**
@@ -287,6 +288,49 @@ class Upgrade
         $changed = self::ensureOption($db, 'apiToken', Common::randString(48, true)) || $changed;
 
         return $changed ? _t('已启用 API 与导入导出能力') : null;
+    }
+
+    /**
+     * @param Db $db
+     * @param Options $options
+     * @return string|null
+     * @throws \Typecho\Db\Exception
+     */
+    public static function v1_3_6(Db $db, Options $options): ?string
+    {
+        self::ensureOption($db, 'lang', Language::DEFAULT_LANG);
+
+        return _t('已启用语言包管理能力');
+    }
+
+    /**
+     * @param Db $db
+     * @param Options $options
+     * @return string|null
+     */
+    public static function v1_3_7(Db $db, Options $options): ?string
+    {
+        return _t('已优化应用管理入口');
+    }
+
+    /**
+     * @param Db $db
+     * @param Options $options
+     * @return string|null
+     */
+    public static function v1_3_8(Db $db, Options $options): ?string
+    {
+        return _t('已优化外观管理布局');
+    }
+
+    /**
+     * @param Db $db
+     * @param Options $options
+     * @return string|null
+     */
+    public static function v1_3_9(Db $db, Options $options): ?string
+    {
+        return _t('已优化当前外观操作展示');
     }
 
     /**

@@ -3,7 +3,7 @@
 namespace Widget\Options;
 
 use Typecho\Db\Exception;
-use Typecho\I18n\GetText;
+use Typecho\Language;
 use Typecho\Widget\Helper\Form;
 use Widget\ActionInterface;
 use Widget\Base\Options;
@@ -45,22 +45,7 @@ class General extends Options implements ActionInterface
      */
     public static function getLangs(): array
     {
-        $dir = defined('__TYPECHO_LANG_DIR__') ? __TYPECHO_LANG_DIR__ : __TYPECHO_ROOT_DIR__ . '/usr/langs';
-        $files = glob($dir . '/*.mo');
-        $langs = ['zh_CN' => '简体中文'];
-
-        if (!empty($files)) {
-            foreach ($files as $file) {
-                $getText = new GetText($file, false);
-                [$name] = explode('.', basename($file));
-                $title = $getText->translate('lang', $count);
-                $langs[$name] = $count > - 1 ? $title : $name;
-            }
-
-            ksort($langs);
-        }
-
-        return $langs;
+        return Language::getLangs();
     }
 
     /**

@@ -87,8 +87,8 @@ $dashboardLogs = $user->pass('administrator', true) ? $db->fetchAll($db->select(
                             </li>
                         <?php endif; ?>
                         <?php if ($user->pass('administrator', true)): ?>
-                            <li><a href="<?php $options->adminUrl('themes.php'); ?>"><?php _e('更换外观'); ?></a></li>
-                            <li><a href="<?php $options->adminUrl('plugins.php'); ?>"><?php _e('插件管理'); ?></a></li>
+                            <li><a href="<?php $options->adminUrl('applications.php?tab=themes'); ?>"><?php _e('更换外观'); ?></a></li>
+                            <li><a href="<?php $options->adminUrl('applications.php?tab=plugins'); ?>"><?php _e('插件管理'); ?></a></li>
                             <li><a href="<?php $options->adminUrl('options-general.php'); ?>"><?php _e('系统设置'); ?></a>
                             </li>
                         <?php endif; ?>

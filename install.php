@@ -43,7 +43,8 @@ function install_get_lang(): string
             \Typecho\Cookie::set('lang', $lang);
         }
 
-        return \Typecho\Cookie::get('lang', $lang);
+        $lang = \Typecho\Cookie::get('lang', $lang);
+        return \Typecho\Language::isAvailable($lang) ? $lang : 'zh_CN';
     }
 }
 

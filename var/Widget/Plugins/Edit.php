@@ -299,7 +299,7 @@ class Edit extends Options implements ActionInterface
         }
 
         /** 转向原页 */
-        $this->response->redirect(Common::url('plugins.php', $this->options->adminUrl));
+        $this->response->redirect(Common::url('applications.php?tab=plugins', $this->options->adminUrl));
     }
 
     /**

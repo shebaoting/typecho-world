@@ -7,6 +7,7 @@ use Typecho\Cookie;
 use Typecho\Date;
 use Typecho\Db;
 use Typecho\I18n;
+use Typecho\Language;
 use Typecho\Plugin;
 use Typecho\Response;
 use Typecho\Router;
@@ -82,9 +83,12 @@ class Init extends Widget
         $options = Options::alloc();
 
         /** 语言包初始化 */
-        if ($options->lang && $options->lang != 'zh_CN') {
-            $dir = defined('__TYPECHO_LANG_DIR__') ? __TYPECHO_LANG_DIR__ : __TYPECHO_ROOT_DIR__ . '/usr/langs';
-            I18n::setLang($dir . '/' . $options->lang . '.mo');
+        if (
+            $options->lang
+            && $options->lang != Language::DEFAULT_LANG
+            && Language::isAvailable($options->lang)
+        ) {
+            I18n::setLang(Language::file($options->lang));
         }
 
         /** 备份文件目录初始化 */

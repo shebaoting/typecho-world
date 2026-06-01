@@ -44,6 +44,7 @@ class Action extends Widget
         'options-reading'          => '\Widget\Options\Reading',
         'plugins-edit'             => '\Widget\Plugins\Edit',
         'themes-edit'              => '\Widget\Themes\Edit',
+        'languages-edit'           => '\Widget\Languages\Edit',
         'users-edit'               => '\Widget\Users\Edit',
         'users-profile'            => '\Widget\Users\Profile',
         'backup'                   => '\Widget\Backup'
