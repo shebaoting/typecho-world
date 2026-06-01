@@ -48,6 +48,7 @@ class Admin extends Contents
         } elseif ($this->request->is('keywords')) {
             $select = $this->select('table.contents.cid')
                 ->where('table.contents.type = ? OR table.contents.type = ?', 'page', 'page_draft');
+            $this->filterStatus($select);
             $this->searchQuery($select);
 
             $ids = array_column($this->db->fetchAll($select), 'cid');
@@ -139,6 +140,21 @@ class Admin extends Contents
             'table.contents.password',
         )->where('table.contents.type = ? OR table.contents.type = ?', 'page', 'page_draft');
 
+        $this->filterStatus($select);
+
         return $this->db->fetchAll($select);
+    }
+
+    /**
+     * @param \Typecho\Db\Query $select
+     * @return void
+     */
+    private function filterStatus(\Typecho\Db\Query $select): void
+    {
+        if ($this->request->is('status=trash')) {
+            $select->where('table.contents.status = ?', 'trash');
+        } else {
+            $select->where('table.contents.status <> ?', 'trash');
+        }
     }
 }

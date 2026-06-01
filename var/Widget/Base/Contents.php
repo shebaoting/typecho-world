@@ -20,6 +20,7 @@ use Widget\Upload;
 use Widget\Users\Author;
 use Widget\Metas\Category\Related as CategoryRelated;
 use Widget\Metas\Tag\Related as TagRelated;
+use Widget\Contents\Related\Series as SeriesRelated;
 
 if (!defined('__TYPECHO_ROOT_DIR__')) {
     exit;
@@ -64,6 +65,9 @@ if (!defined('__TYPECHO_ROOT_DIR__')) {
  * @property-read string $summary
  * @property-read string $content
  * @property-read Config $fields
+ * @property-read bool $isPinned
+ * @property-read bool $isFeatured
+ * @property-read string $series
  * @property-read Config $attachment
  * @property-read string $theId
  * @property-read string $respondId
@@ -532,6 +536,32 @@ class Contents extends Base implements QueryInterface, RowFilterInterface, Prima
     }
 
     /**
+     * 输出文章所属系列
+     *
+     * @param string|null $default 如果没有则输出
+     */
+    public function series(?string $default = null)
+    {
+        echo '' !== $this->series ? $this->series : $default;
+    }
+
+    /**
+     * 获取同系列文章
+     *
+     * @param int $limit 最大个数
+     * @return Contents
+     */
+    public function seriesPosts(int $limit = 0): Contents
+    {
+        return SeriesRelated::allocWithAlias('series:' . $this->cid . ':' . $limit, [
+            'cid'    => $this->cid,
+            'series' => $this->series,
+            'type'   => $this->type,
+            'limit'  => $limit,
+        ]);
+    }
+
+    /**
      * 输出当前作者
      *
      * @param string $item 需要输出的项目
@@ -558,8 +588,8 @@ class Contents extends Base implements QueryInterface, RowFilterInterface, Prima
     {
         if ('attachment' == $this->type) {
             if ($this->attachment->isImage) {
-                return '<img src="' . $this->attachment->url . '" alt="' .
-                    $this->title . '" />';
+                $alt = htmlspecialchars(Common::strBy($this->attachment->alt, $this->title), ENT_QUOTES);
+                return '<img src="' . $this->attachment->url . '" alt="' . $alt . '" />';
             } else {
                 return '<a href="' . $this->attachment->url . '" title="' .
                     $this->title . '">' . $this->title . '</a>';
@@ -694,7 +724,7 @@ class Contents extends Base implements QueryInterface, RowFilterInterface, Prima
     protected function ___tags(): array
     {
         return TagRelated::allocWithAlias($this->cid, ['cid' => $this->cid])
-            ->toArray(['mid', 'name', 'slug', 'description', 'count', 'permalink']);
+            ->toArray(['mid', 'name', 'slug', 'description', 'aliases', 'count', 'permalink']);
     }
 
     /**
@@ -735,9 +765,20 @@ class Contents extends Base implements QueryInterface, RowFilterInterface, Prima
     {
         if ('attachment' == $this->type) {
             $content = json_decode($this->row['text'], true);
+            $content = is_array($content) ? $content : [];
+            $content += [
+                'name'        => $this->title,
+                'type'        => '',
+                'description' => '',
+                'alt'         => '',
+                'caption'     => '',
+            ];
 
             //增加数据信息
             $attachment = new Config($content);
+            $attachment->alt = Common::strBy($content['alt'] ?? null, $this->title);
+            $attachment->caption = $content['caption'] ?? '';
+            $attachment->description = $content['description'] ?? '';
             $attachment->isImage = in_array($content['type'], [
                 'jpg', 'jpeg', 'gif', 'png', 'tiff', 'bmp', 'webp', 'avif'
             ]);
@@ -767,6 +808,30 @@ class Contents extends Base implements QueryInterface, RowFilterInterface, Prima
         }
 
         return new Config($fields);
+    }
+
+    /**
+     * @return bool
+     */
+    protected function ___isPinned(): bool
+    {
+        return (int) ($this->fields->_pinned ?? 0) > 0;
+    }
+
+    /**
+     * @return bool
+     */
+    protected function ___isFeatured(): bool
+    {
+        return (int) ($this->fields->_featured ?? 0) > 0;
+    }
+
+    /**
+     * @return string
+     */
+    protected function ___series(): string
+    {
+        return (string) ($this->fields->_series ?? '');
     }
 
     /**

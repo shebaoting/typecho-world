@@ -94,13 +94,15 @@ class Edit extends Contents implements ActionInterface
         }
 
         /** 取出数据 */
-        $input = $this->request->from('name', 'slug', 'description');
+        $input = $this->request->from('name', 'slug', 'alt', 'caption', 'description');
         $input['slug'] = Common::slugName(Common::strBy($input['slug'] ?? null, $input['name']));
 
         $attachment['title'] = $input['name'];
         $attachment['slug'] = $input['slug'];
 
         $content = $this->attachment->toArray();
+        $content['alt'] = $input['alt'];
+        $content['caption'] = $input['caption'];
         $content['description'] = $input['description'];
 
         $attachment['text'] = json_encode($content);
@@ -152,6 +154,26 @@ class Edit extends Contents implements ActionInterface
             _t('文件缩略名用于创建友好的链接形式,建议使用字母,数字,下划线和横杠.')
         );
         $form->addInput($slug);
+
+        /** 替代文本 */
+        $alt = new Form\Element\Text(
+            'alt',
+            null,
+            $this->attachment->alt,
+            _t('替代文本'),
+            _t('用于图片 alt 属性, 有利于无障碍访问和搜索引擎理解图片.')
+        );
+        $form->addInput($alt);
+
+        /** 图片说明 */
+        $caption = new Form\Element\Text(
+            'caption',
+            null,
+            $this->attachment->caption,
+            _t('图片说明'),
+            _t('图片下方说明文字, 主题可以按需显示.')
+        );
+        $form->addInput($caption);
 
         /** 文件描述 */
         $description = new Form\Element\Textarea(

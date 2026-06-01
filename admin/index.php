@@ -4,6 +4,30 @@ include 'header.php';
 include 'menu.php';
 
 $stat = \Widget\Stat::alloc();
+$db = \Typecho\Db::get();
+$draftSelect = $db->select('cid', 'title', 'modified', 'type')
+    ->from('table.contents')
+    ->where('table.contents.type IN ?', ['post_draft', 'page_draft'])
+    ->where('table.contents.status <> ?', 'trash');
+
+if (!$user->pass('editor', true)) {
+    $draftSelect->where('table.contents.authorId = ?', $user->uid);
+}
+
+$dashboardDrafts = $db->fetchAll($draftSelect
+    ->order('table.contents.modified', \Typecho\Db::SORT_DESC)
+    ->limit(6));
+$dashboardLogs = $user->pass('administrator', true) ? $db->fetchAll($db->select(
+    'table.logs.created',
+    'table.logs.action',
+    'table.logs.targetType',
+    'table.logs.targetId',
+    'table.logs.targetTitle',
+    'table.users.screenName'
+)->from('table.logs')
+    ->join('table.users', 'table.logs.userId = table.users.uid', \Typecho\Db::LEFT_JOIN)
+    ->order('table.logs.lid', \Typecho\Db::SORT_DESC)
+    ->limit(6)) : [];
 ?>
 <main class="main">
     <div class="container typecho-dashboard">
@@ -13,6 +37,29 @@ $stat = \Widget\Stat::alloc();
                 <p><?php _e('目前有 <em>%s</em> 篇文章, 并有 <em>%s</em> 条关于你的评论在 <em>%s</em> 个分类中.',
                         $stat->myPublishedPostsNum, $stat->myPublishedCommentsNum, $stat->categoriesNum); ?>
                     <br><?php _e('点击下面的链接快速开始:'); ?></p>
+
+                <div class="dashboard-cards">
+                    <a class="dashboard-card" href="<?php $options->adminUrl('manage-posts.php'); ?>">
+                        <strong><?php $stat->publishedPostsNum(); ?></strong>
+                        <span><?php _e('已发布文章'); ?></span>
+                    </a>
+                    <a class="dashboard-card" href="<?php $options->adminUrl('manage-posts.php?status=draft'); ?>">
+                        <strong><?php $stat->draftPostsNum(); ?></strong>
+                        <span><?php _e('草稿'); ?></span>
+                    </a>
+                    <a class="dashboard-card" href="<?php $options->adminUrl('manage-posts.php?status=waiting'); ?>">
+                        <strong><?php $stat->waitingPostsNum(); ?></strong>
+                        <span><?php _e('待审核'); ?></span>
+                    </a>
+                    <a class="dashboard-card" href="<?php $options->adminUrl('manage-posts.php?status=trash'); ?>">
+                        <strong><?php $stat->trashPostsNum(); ?></strong>
+                        <span><?php _e('回收站文章'); ?></span>
+                    </a>
+                    <a class="dashboard-card" href="<?php $options->adminUrl('manage-comments.php?status=waiting'); ?>">
+                        <strong><?php $stat->waitingCommentsNum(); ?></strong>
+                        <span><?php _e('待审核评论'); ?></span>
+                    </a>
+                </div>
 
                 <ul id="start-link">
                     <?php if ($user->pass('contributor', true)): ?>
@@ -50,7 +97,7 @@ $stat = \Widget\Stat::alloc();
                 </ul>
             </div>
 
-            <div class="col-mb-12 col-tb-4" role="complementary">
+            <div class="col-mb-12 col-tb-3" role="complementary">
                 <section class="latest-link">
                     <h3><?php _e('最近发布的文章'); ?></h3>
                     <?php \Widget\Contents\Post\Recent::alloc('pageSize=10')->to($posts); ?>
@@ -69,7 +116,7 @@ $stat = \Widget\Stat::alloc();
                 </section>
             </div>
 
-            <div class="col-mb-12 col-tb-4" role="complementary">
+            <div class="col-mb-12 col-tb-3" role="complementary">
                 <section class="latest-link">
                     <h3><?php _e('最近得到的回复'); ?></h3>
                     <ul>
@@ -90,14 +137,44 @@ $stat = \Widget\Stat::alloc();
                 </section>
             </div>
 
-            <div class="col-mb-12 col-tb-4" role="complementary">
+            <div class="col-mb-12 col-tb-3" role="complementary">
                 <section class="latest-link">
-                    <h3><?php _e('官方最新日志'); ?></h3>
-                    <div id="typecho-message">
-                        <ul>
-                            <li><?php _e('读取中...'); ?></li>
-                        </ul>
-                    </div>
+                    <h3><?php _e('最近草稿'); ?></h3>
+                    <ul>
+                        <?php if (!empty($dashboardDrafts)): ?>
+                            <?php foreach ($dashboardDrafts as $draft): ?>
+                                <?php $draftDate = new \Typecho\Date($draft['modified']); ?>
+                                <li>
+                                    <span><?php echo $draftDate->format('n.j'); ?></span>
+                                    <a href="<?php $options->adminUrl(('page_draft' == $draft['type'] ? 'write-page.php' : 'write-post.php') . '?cid=' . $draft['cid']); ?>"><?php echo htmlspecialchars($draft['title'] ?: _t('未命名文档')); ?></a>
+                                </li>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <li><?php _e('暂时没有草稿'); ?></li>
+                        <?php endif; ?>
+                    </ul>
+                </section>
+            </div>
+
+            <div class="col-mb-12 col-tb-3" role="complementary">
+                <section class="latest-link">
+                    <h3><?php _e('最近操作'); ?></h3>
+                    <ul>
+                        <?php if (!empty($dashboardLogs)): ?>
+                            <?php foreach ($dashboardLogs as $log): ?>
+                                <?php $logDate = new \Typecho\Date($log['created']); ?>
+                                <li>
+                                    <span><?php echo $logDate->format('n.j'); ?></span>
+                                    <?php echo htmlspecialchars($log['screenName'] ?: _t('系统')); ?>:
+                                    <a href="<?php $options->adminUrl('manage-logs.php'); ?>"><?php echo htmlspecialchars($log['targetTitle'] ?: $log['action']); ?></a>
+                                </li>
+                            <?php endforeach; ?>
+                        <?php elseif ($user->pass('administrator', true)): ?>
+                            <li><?php _e('暂时没有操作日志'); ?></li>
+                        <?php else: ?>
+                            <li><?php _e('仅管理员可见'); ?></li>
+                        <?php endif; ?>
+                    </ul>
                 </section>
             </div>
         </div>
@@ -111,25 +188,8 @@ include 'common-js.php';
 
 <script>
     $(document).ready(function () {
-        var ul = $('#typecho-message ul'), cache = window.sessionStorage,
-            html = cache ? cache.getItem('feed') : '',
+        var cache = window.sessionStorage,
             update = cache ? cache.getItem('update') : '';
-
-        if (!!html) {
-            ul.html(html);
-        } else {
-            html = '';
-            $.get('<?php $options->index('/action/ajax?do=feed'); ?>', function (o) {
-                for (var i = 0; i < o.length; i++) {
-                    var item = o[i];
-                    html += '<li><span>' + item.date + '</span> <a href="' + item.link + '" target="_blank">' + item.title
-                        + '</a></li>';
-                }
-
-                ul.html(html);
-                cache.setItem('feed', html);
-            }, 'json');
-        }
 
         function applyUpdate(update) {
             if (update.available) {

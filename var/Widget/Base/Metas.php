@@ -7,6 +7,7 @@ use Typecho\Db\Exception;
 use Typecho\Db\Query;
 use Typecho\Router;
 use Typecho\Router\ParamsDelegateInterface;
+use Typecho\Validate;
 use Widget\Base;
 
 if (!defined('__TYPECHO_ROOT_DIR__')) {
@@ -22,6 +23,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) {
  * @property string $slug
  * @property string $type
  * @property string $description
+ * @property string $aliases
  * @property int $count
  * @property int $order
  * @property int $parent
@@ -93,6 +95,7 @@ class Metas extends Base implements QueryInterface, RowFilterInterface, PrimaryK
      */
     public function filter(array $row): array
     {
+        $row['aliases'] = $row['aliases'] ?? '';
         return Metas::pluginHandle()->filter('filter', $row, $this);
     }
 
@@ -162,9 +165,7 @@ class Metas extends Base implements QueryInterface, RowFilterInterface, PrimaryK
                 continue;
             }
 
-            $row = $this->db->fetchRow($this->select()
-                ->where('type = ?', 'tag')
-                ->where('name = ?', $tag)->limit(1));
+            $row = $this->findTag($tag);
 
             if ($row) {
                 $result[] = $row['mid'];
@@ -184,6 +185,80 @@ class Metas extends Base implements QueryInterface, RowFilterInterface, PrimaryK
         }
 
         return is_array($inputTags) ? $result : current($result);
+    }
+
+    /**
+     * 根据标签名或别名查找标签
+     *
+     * @param string $tag
+     * @param bool $matchAliases
+     * @return array|null
+     * @throws Exception
+     */
+    public function findTag(string $tag, bool $matchAliases = true): ?array
+    {
+        $tag = trim($tag);
+
+        if ('' === $tag) {
+            return null;
+        }
+
+        $row = $this->db->fetchRow($this->select()
+            ->where('type = ?', 'tag')
+            ->where('name = ?', $tag)
+            ->limit(1));
+
+        if ($row || !$matchAliases) {
+            return $row;
+        }
+
+        $rows = $this->db->fetchAll($this->select('mid', 'name', 'slug', 'aliases')
+            ->where('type = ?', 'tag')
+            ->where('aliases IS NOT NULL AND aliases <> ?', ''));
+
+        foreach ($rows as $row) {
+            if (in_array($tag, self::splitTagAliases($row['aliases'] ?? ''), true)) {
+                return $row;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 将标签别名拆为干净的列表
+     *
+     * @param string|null $aliases
+     * @return array
+     */
+    public static function splitTagAliases(?string $aliases): array
+    {
+        $aliases = str_replace('，', ',', $aliases ?? '');
+        $items = preg_split("/[\r\n,]+/", $aliases) ?: [];
+        $result = [];
+
+        foreach ($items as $item) {
+            $item = trim($item);
+
+            if ('' === $item || !Validate::xssCheck($item)) {
+                continue;
+            }
+
+            $result[] = $item;
+        }
+
+        return array_values(array_unique($result));
+    }
+
+    /**
+     * 规范化标签别名存储格式
+     *
+     * @param string|null $aliases
+     * @return string
+     */
+    public static function normalizeTagAliases(?string $aliases): string
+    {
+        return implode(',', self::splitTagAliases($aliases));
     }
 
     /**

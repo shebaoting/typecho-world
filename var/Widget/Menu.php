@@ -12,6 +12,7 @@ use Widget\Contents\Page\Edit as PageEdit;
 use Widget\Contents\Post\Admin as PostAdmin;
 use Widget\Contents\Page\Admin as PageAdmin;
 use Widget\Comments\Admin as CommentsAdmin;
+use Widget\Logs\Admin as LogsAdmin;
 use Widget\Metas\Category\Admin as CategoryAdmin;
 use Widget\Metas\Category\Edit as CategoryEdit;
 use Widget\Metas\Tag\Admin as TagAdmin;
@@ -92,6 +93,7 @@ class Menu extends Base
                 [_t('插件'), _t('插件管理'), 'plugins.php', 'administrator'],
                 [[Config::class, 'getMenuTitle'], [Config::class, 'getMenuTitle'], 'options-plugin.php?config=', 'administrator', true],
                 [_t('外观'), _t('网站外观'), 'themes.php', 'administrator'],
+                [_t('导航菜单'), _t('导航菜单'), 'navigation.php', 'administrator'],
                 [[Files::class, 'getMenuTitle'], [Files::class, 'getMenuTitle'], 'theme-editor.php', 'administrator', true],
                 [_t('设置外观'), _t('设置外观'), 'options-theme.php', 'administrator', true],
                 [_t('备份'), _t('备份'), 'backup.php', 'administrator'],
@@ -112,6 +114,7 @@ class Menu extends Base
                 [[PageAdmin::class, 'getMenuTitle'], [PageAdmin::class, 'getMenuTitle'], 'manage-pages.php?parent=', 'editor', true, [PageAdmin::class, 'getAddLink']],
                 [_t('评论'), _t('管理评论'), 'manage-comments.php', 'contributor'],
                 [[CommentsAdmin::class, 'getMenuTitle'], [CommentsAdmin::class, 'getMenuTitle'], 'manage-comments.php?cid=', 'contributor', true],
+                [_t('操作日志'), _t('查看操作日志'), 'manage-logs.php', 'administrator'],
                 [_t('分类'), _t('管理分类'), 'manage-categories.php', 'editor', false, 'category.php'],
                 [_t('新增分类'), _t('新增分类'), 'category.php', 'editor', true],
                 [[CategoryAdmin::class, 'getMenuTitle'], [CategoryAdmin::class, 'getMenuTitle'], 'manage-categories.php?parent=', 'editor', true, [CategoryAdmin::class, 'getAddLink']],
@@ -130,6 +133,7 @@ class Menu extends Base
                 [_t('评论'), _t('评论设置'), 'options-discussion.php', 'administrator'],
                 [_t('阅读'), _t('阅读设置'), 'options-reading.php', 'administrator'],
                 [_t('永久链接'), _t('永久链接设置'), 'options-permalink.php', 'administrator'],
+                [_t('接口'), _t('接口与导出'), 'options-api.php', 'administrator'],
             ]
         ];
 

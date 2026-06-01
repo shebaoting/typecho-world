@@ -53,9 +53,16 @@ class Edit extends Options implements ActionInterface
             if (file_exists($configFile)) {
                 require_once $configFile;
 
-                if (function_exists('themeConfig')) {
+                if (function_exists('themeConfigSchema') || function_exists('themeConfig')) {
                     $form = new Form();
-                    themeConfig($form);
+                    $schema = Config::getSchema($theme);
+
+                    if (!empty($schema)) {
+                        Config::applySchema($form, $schema);
+                    } else {
+                        themeConfig($form);
+                    }
+
                     $options = $form->getValues();
 
                     if ($options && !$this->configHandle($options, true)) {

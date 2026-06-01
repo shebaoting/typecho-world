@@ -83,6 +83,47 @@ class Migration
     }
 
     /**
+     * 增加字段, 已存在时跳过
+     *
+     * @param string $table
+     * @param string $column
+     * @param string $definition
+     * @throws Exception
+     */
+    public function addColumn(string $table, string $column, string $definition)
+    {
+        $tableName = $this->tableName($table);
+
+        if ($this->columnExists($tableName, $column)) {
+            return;
+        }
+
+        $sql = 'ALTER TABLE ' . $this->quote($tableName) . ' ADD COLUMN '
+            . $this->quote($column) . ' ' . $definition;
+
+        $this->db->query($sql, Db::WRITE, '');
+    }
+
+    /**
+     * 建表, 已存在时跳过
+     *
+     * @param string $table
+     * @param string $definition
+     * @throws Exception
+     */
+    public function createTable(string $table, string $definition)
+    {
+        $tableName = $this->tableName($table);
+
+        if ($this->tableExists($tableName)) {
+            return;
+        }
+
+        $sql = 'CREATE TABLE ' . $this->quote($tableName) . ' (' . $definition . ')';
+        $this->db->query($sql, Db::WRITE, '');
+    }
+
+    /**
      * 建立迁移记录表
      *
      * @throws Exception
@@ -155,6 +196,52 @@ class Migration
 
     /**
      * @param string $table
+     * @param string $column
+     * @return bool
+     * @throws Exception
+     */
+    private function columnExists(string $table, string $column): bool
+    {
+        return match ($this->driver) {
+            'mysql' => (bool) $this->db->fetchRow(
+                'SHOW COLUMNS FROM ' . $this->quote($table)
+                . ' LIKE ' . $this->db->getAdapter()->quoteValue($column)
+            ),
+            'pgsql' => (bool) $this->db->fetchRow(
+                'SELECT 1 FROM information_schema.columns'
+                . ' WHERE table_schema = current_schema()'
+                . ' AND table_name = ' . $this->db->getAdapter()->quoteValue($table)
+                . ' AND column_name = ' . $this->db->getAdapter()->quoteValue($column)
+            ),
+            default => $this->sqliteColumnExists($table, $column),
+        };
+    }
+
+    /**
+     * @param string $table
+     * @return bool
+     * @throws Exception
+     */
+    private function tableExists(string $table): bool
+    {
+        return match ($this->driver) {
+            'mysql' => (bool) $this->db->fetchRow(
+                'SHOW TABLES LIKE ' . $this->db->getAdapter()->quoteValue($table)
+            ),
+            'pgsql' => (bool) $this->db->fetchRow(
+                'SELECT 1 FROM information_schema.tables'
+                . ' WHERE table_schema = current_schema()'
+                . ' AND table_name = ' . $this->db->getAdapter()->quoteValue($table)
+            ),
+            default => (bool) $this->db->fetchRow(
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+                . ' AND name = ' . $this->db->getAdapter()->quoteValue($table)
+            ),
+        };
+    }
+
+    /**
+     * @param string $table
      * @param string $indexName
      * @return bool
      * @throws Exception
@@ -165,6 +252,25 @@ class Migration
 
         foreach ($rows as $row) {
             if (($row['name'] ?? null) === $indexName) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param string $table
+     * @param string $column
+     * @return bool
+     * @throws Exception
+     */
+    private function sqliteColumnExists(string $table, string $column): bool
+    {
+        $rows = $this->db->fetchAll('PRAGMA table_info(' . $this->quote($table) . ')');
+
+        foreach ($rows as $row) {
+            if (($row['name'] ?? null) === $column) {
                 return true;
             }
         }

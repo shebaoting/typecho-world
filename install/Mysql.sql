@@ -69,7 +69,9 @@ CREATE TABLE `typecho_contents` (
   KEY `created` (`created`),
   KEY `typecho_contents_type_status_created` (`type`,`status`,`created`),
   KEY `typecho_contents_author_status_created` (`authorId`,`status`,`created`),
-  KEY `typecho_contents_parent_type` (`parent`,`type`)
+  KEY `typecho_contents_parent_type` (`parent`,`type`),
+  KEY `typecho_contents_parent_type_modified` (`parent`,`type`,`modified`),
+  KEY `typecho_contents_type_status_modified` (`type`,`status`,`modified`)
 ) ENGINE=%engine%  DEFAULT CHARSET=%charset%;
 
 -- --------------------------------------------------------
@@ -87,7 +89,9 @@ CREATE TABLE `typecho_fields` (
   `float_value` float default '0',
   PRIMARY KEY  (`cid`,`name`),
   KEY `int_value` (`int_value`),
-  KEY `float_value` (`float_value`)
+  KEY `float_value` (`float_value`),
+  KEY `typecho_fields_name` (`name`),
+  KEY `typecho_fields_name_int_value` (`name`,`int_value`)
 ) ENGINE=%engine%  DEFAULT CHARSET=%charset%;
 
 -- --------------------------------------------------------
@@ -102,6 +106,7 @@ CREATE TABLE `typecho_metas` (
   `slug` varchar(150) default NULL,
   `type` varchar(32) NOT NULL,
   `description` varchar(150) default NULL,
+  `aliases` text,
   `count` int(10) unsigned default '0',
   `order` int(10) unsigned default '0',
   `parent` int(10) unsigned default '0',
@@ -150,6 +155,28 @@ CREATE TABLE `typecho_migrations` (
   `name` varchar(128) NOT NULL,
   `executed` int(10) unsigned NOT NULL default '0',
   PRIMARY KEY (`name`)
+) ENGINE=%engine% DEFAULT CHARSET=%charset%;
+
+-- --------------------------------------------------------
+
+--
+-- 表的结构 `typecho_logs`
+--
+
+CREATE TABLE `typecho_logs` (
+  `lid` int(10) unsigned NOT NULL auto_increment,
+  `created` int(10) unsigned default '0',
+  `userId` int(10) unsigned default '0',
+  `action` varchar(32) default NULL,
+  `targetType` varchar(32) default NULL,
+  `targetId` int(10) unsigned default '0',
+  `targetTitle` varchar(150) default NULL,
+  `message` text,
+  `ip` varchar(64) default NULL,
+  PRIMARY KEY (`lid`),
+  KEY `typecho_logs_created` (`created`),
+  KEY `typecho_logs_user_created` (`userId`,`created`),
+  KEY `typecho_logs_target` (`targetType`,`targetId`)
 ) ENGINE=%engine% DEFAULT CHARSET=%charset%;
 
 -- --------------------------------------------------------

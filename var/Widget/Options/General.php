@@ -90,6 +90,7 @@ class General extends Options implements ActionInterface
             'title',
             'description',
             'keywords',
+            'robotsTxt',
             'allowRegister',
             'allowXmlRpc',
             'lang',
@@ -186,6 +187,18 @@ class General extends Options implements ActionInterface
             _t('请以半角逗号 "," 分割多个关键字.')
         );
         $form->addInput($keywords->addRule('xssCheck', _t('请不要在关键词中使用特殊字符')));
+
+        /** Robots */
+        $robotsTxt = new Form\Element\Textarea(
+            'robotsTxt',
+            null,
+            $this->options->robotsTxt,
+            _t('Robots.txt'),
+            _t('留空时系统会自动输出允许抓取和 sitemap 地址.')
+        );
+        $robotsTxt->input->setAttribute('class', 'w-100 mono');
+        $robotsTxt->input->setAttribute('rows', '5');
+        $form->addInput($robotsTxt);
 
         /** 注册 */
         $allowRegister = new Form\Element\Radio(

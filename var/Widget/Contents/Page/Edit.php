@@ -10,6 +10,7 @@ use Widget\Base\Contents;
 use Widget\Contents\EditTrait;
 use Widget\ActionInterface;
 use Widget\Contents\PrepareEditTrait;
+use Widget\Log;
 use Widget\Notice;
 use Widget\Service;
 
@@ -75,6 +76,7 @@ class Edit extends Contents implements ActionInterface
 
             // 完成发布插件接口
             self::pluginHandle()->call('finishPublish', $contents, $this);
+            Log::record('publish', 'page', (int) $this->cid, $this->title, _t('发布页面'));
 
             /** 发送ping */
             Service::alloc()->sendPing($this);
@@ -98,6 +100,9 @@ class Edit extends Contents implements ActionInterface
 
             // 完成发布插件接口
             self::pluginHandle()->call('finishSave', $contents, $this);
+            if (!$this->request->isAjax()) {
+                Log::record('save', 'page', (int) $this->cid, $this->title, _t('保存草稿'));
+            }
 
             /** 设置高亮 */
             Notice::alloc()->highlight($this->cid);
@@ -159,6 +164,7 @@ class Edit extends Contents implements ActionInterface
 
                 // 完成标记插件接口
                 self::pluginHandle()->call('finishMark', $status, $page, $this);
+                Log::record('batch', 'page', (int) $page, null, _t('标记为%s', $statusList[$status]));
 
                 $markCount++;
             }
@@ -183,6 +189,39 @@ class Edit extends Contents implements ActionInterface
      * @throws DbException
      */
     public function deletePage()
+    {
+        $pages = $this->request->filter('int')->getArray('cid');
+        $deleteCount = 0;
+
+        foreach ($pages as $page) {
+            if ($this->trashContent((int) $page, 'page', false)) {
+                if ($this->options->frontPage == 'page:' . $page) {
+                    $this->db->query($this->db->update('table.options')
+                        ->rows(['value' => 'recent'])
+                        ->where('name = ?', 'frontPage'));
+                }
+
+                $deleteCount++;
+            }
+        }
+
+        /** 设置提示信息 */
+        Notice::alloc()
+            ->set(
+                $deleteCount > 0 ? _t('页面已经移至回收站') : _t('没有页面被移动'),
+                $deleteCount > 0 ? 'success' : 'notice'
+            );
+
+        /** 返回原网页 */
+        $this->response->goBack();
+    }
+
+    /**
+     * 永久删除页面
+     *
+     * @throws DbException
+     */
+    public function deletePageForever()
     {
         $pages = $this->request->filter('int')->getArray('cid');
         $deleteCount = 0;
@@ -231,6 +270,7 @@ class Edit extends Contents implements ActionInterface
                 // 完成删除插件接口
                 self::pluginHandle()->call('finishDelete', $page, $this);
 
+                Log::record('delete_forever', 'page', (int) $page, null, _t('永久删除页面'));
                 $deleteCount++;
             }
         }
@@ -238,12 +278,106 @@ class Edit extends Contents implements ActionInterface
         /** 设置提示信息 */
         Notice::alloc()
             ->set(
-                $deleteCount > 0 ? _t('页面已经被删除') : _t('没有页面被删除'),
+                $deleteCount > 0 ? _t('页面已经被永久删除') : _t('没有页面被删除'),
                 $deleteCount > 0 ? 'success' : 'notice'
             );
 
         /** 返回原网页 */
         $this->response->goBack();
+    }
+
+    /**
+     * 从回收站恢复页面
+     *
+     * @throws DbException
+     */
+    public function restorePage()
+    {
+        $pages = $this->request->filter('int')->getArray('cid');
+        $restoreCount = 0;
+
+        foreach ($pages as $page) {
+            if ($this->restoreContent((int) $page, 'page', false)) {
+                $restoreCount++;
+            }
+        }
+
+        Notice::alloc()
+            ->set(
+                $restoreCount > 0 ? _t('页面已经恢复') : _t('没有页面被恢复'),
+                $restoreCount > 0 ? 'success' : 'notice'
+            );
+
+        $this->response->goBack();
+    }
+
+    /**
+     * 批量编辑页面
+     *
+     * @throws DbException
+     */
+    public function batchPage()
+    {
+        $pages = $this->request->filter('int')->getArray('cid');
+        $batchCount = 0;
+        $status = $this->request->get('batchStatus', '');
+        $parent = $this->request->filter('int')->get('parent', -1);
+
+        foreach ($pages as $page) {
+            $page = (int) $page;
+            $row = $this->db->fetchRow($this->select()
+                ->where('table.contents.cid = ?', $page)
+                ->where('table.contents.type IN ?', ['page', 'page_draft'])
+                ->limit(1));
+
+            if (!$row || 'trash' == $row['status'] || !$this->isWriteable($this->db->sql()->where('cid = ?', $page))) {
+                continue;
+            }
+
+            $rows = [];
+            if (in_array($status, ['publish', 'hidden'], true) && $status != $row['status']) {
+                $rows['status'] = $status;
+            }
+
+            if ($parent >= 0 && $parent != $page) {
+                $rows['parent'] = $parent;
+            }
+
+            if (!empty($rows)) {
+                $rows['modified'] = $this->options->time;
+                $this->db->query($this->db->update('table.contents')->rows($rows)->where('cid = ?', $page));
+                Log::record('batch', 'page', $page, $row['title'], _t('批量编辑页面'));
+                $batchCount++;
+            }
+        }
+
+        Notice::alloc()
+            ->set(
+                $batchCount > 0 ? _t('页面已经批量更新') : _t('没有页面被更新'),
+                $batchCount > 0 ? 'success' : 'notice'
+            );
+
+        $this->response->goBack();
+    }
+
+    /**
+     * 回滚页面
+     *
+     * @throws DbException
+     */
+    public function rollbackPage()
+    {
+        $draftId = $this->rollbackToHistory('page', false);
+
+        Notice::alloc()->set(
+            $draftId > 0 ? _t('页面已经回滚为可编辑草稿') : _t('没有页面被回滚'),
+            $draftId > 0 ? 'success' : 'notice'
+        );
+
+        $this->response->redirect(Common::url(
+            'write-page.php?cid=' . $this->request->filter('int')->get('cid'),
+            $this->options->adminUrl
+        ));
     }
 
     /**
@@ -328,6 +462,10 @@ class Edit extends Contents implements ActionInterface
         $this->on($this->request->is('do=publish') || $this->request->is('do=save'))
             ->prepare()->writePage();
         $this->on($this->request->is('do=delete'))->deletePage();
+        $this->on($this->request->is('do=deleteForever'))->deletePageForever();
+        $this->on($this->request->is('do=restore'))->restorePage();
+        $this->on($this->request->is('do=batch'))->batchPage();
+        $this->on($this->request->is('do=rollback'))->rollbackPage();
         $this->on($this->request->is('do=mark'))->markPage();
         $this->on($this->request->is('do=deleteDraft'))->deletePageDraft();
         $this->on($this->request->is('do=sort'))->sortPage();

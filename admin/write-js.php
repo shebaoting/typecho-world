@@ -320,6 +320,21 @@ $(document).ready(function() {
         return false;
     });
 
+    $('#edit-secondary .post-option-toggle').on('click', function () {
+        const button = $(this),
+            panels = button.closest('.post-option-panels'),
+            target = $(button.data('panel')),
+            isOpen = button.attr('aria-expanded') === 'true';
+
+        panels.find('.post-option-toggle').attr('aria-expanded', 'false');
+        panels.find('.post-option-panel-content').addClass('hidden');
+
+        if (!isOpen && target.length > 0) {
+            button.attr('aria-expanded', 'true');
+            target.removeClass('hidden');
+        }
+    });
+
     // 自动隐藏密码框
     $('#visibility').change(function () {
         const val = $(this).val(), password = $('#post-password');
@@ -334,6 +349,14 @@ $(document).ready(function() {
     // 草稿删除确认
     $('.edit-draft-notice a').click(function () {
         if (confirm('<?php _e('您确认要删除这份草稿吗?'); ?>')) {
+            window.location.href = $(this).attr('href');
+        }
+
+        return false;
+    });
+
+    $('.revision-history a').click(function () {
+        if (confirm('<?php _e('您确认要回滚到这个版本吗? 当前内容会保存为历史版本。'); ?>')) {
             window.location.href = $(this).attr('href');
         }
 

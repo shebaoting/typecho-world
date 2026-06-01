@@ -5,12 +5,25 @@ include 'menu.php';
 
 $stat = \Widget\Stat::alloc();
 $pages = \Widget\Contents\Page\Admin::alloc();
+$isTrash = 'trash' == $request->get('status');
 ?>
 <main class="main">
     <div class="body container">
         <?php include 'page-title.php'; ?>
         <div class="row typecho-page-main" role="main">
             <div class="col-mb-12 typecho-list">
+                <div class="typecho-list-operate">
+                    <ul class="typecho-option-tabs">
+                        <li<?php if (!$isTrash): ?> class="current"<?php endif; ?>>
+                            <a href="<?php $options->adminUrl('manage-pages.php'); ?>"><?php _e('可用'); ?></a>
+                        </li>
+                        <li<?php if ($isTrash): ?> class="current"<?php endif; ?>>
+                            <a href="<?php $options->adminUrl('manage-pages.php?status=trash'); ?>"><?php _e('回收站'); ?>
+                                <?php if ($stat->trashPagesNum > 0): ?><span class="balloon"><?php $stat->trashPagesNum(); ?></span><?php endif; ?>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
                 <form method="get" class="typecho-list-operate">
                     <div class="operate">
                         <label><i class="sr-only"><?php _e('全选'); ?></i><input type="checkbox"
@@ -20,17 +33,60 @@ $pages = \Widget\Contents\Page\Admin::alloc();
                                     class="sr-only"><?php _e('操作'); ?></i><?php _e('选中项'); ?> <i
                                     class="i-caret-down"></i></button>
                             <ul class="dropdown-menu">
-                                <li><a lang="<?php _e('你确认要删除这些页面吗?'); ?>"
-                                       href="<?php $security->index('/action/contents-page-edit?do=delete'); ?>"><?php _e('删除'); ?></a>
-                                </li>
-                                <li>
-                                    <a href="<?php $security->index('/action/contents-page-edit?do=mark&status=publish'); ?>"><?php _e('标记为<strong>%s</strong>', _t('公开')); ?></a>
-                                </li>
-                                <li>
-                                    <a href="<?php $security->index('/action/contents-page-edit?do=mark&status=hidden'); ?>"><?php _e('标记为<strong>%s</strong>', _t('隐藏')); ?></a>
-                                </li>
+                                <?php if ($isTrash): ?>
+                                    <li>
+                                        <a href="<?php $security->index('/action/contents-page-edit?do=restore'); ?>"><?php _e('恢复'); ?></a>
+                                    </li>
+                                    <li><a lang="<?php _e('你确认要永久删除这些页面吗?'); ?>"
+                                           href="<?php $security->index('/action/contents-page-edit?do=deleteForever'); ?>"><?php _e('永久删除'); ?></a>
+                                    </li>
+                                <?php else: ?>
+                                    <li><a lang="<?php _e('你确认要把这些页面移至回收站吗?'); ?>"
+                                           href="<?php $security->index('/action/contents-page-edit?do=delete'); ?>"><?php _e('移至回收站'); ?></a>
+                                    </li>
+                                    <li>
+                                        <a href="<?php $security->index('/action/contents-page-edit?do=mark&status=publish'); ?>"><?php _e('标记为<strong>%s</strong>', _t('公开')); ?></a>
+                                    </li>
+                                    <li>
+                                        <a href="<?php $security->index('/action/contents-page-edit?do=mark&status=hidden'); ?>"><?php _e('标记为<strong>%s</strong>', _t('隐藏')); ?></a>
+                                    </li>
+                                <?php endif; ?>
                             </ul>
                         </div>
+                        <?php if (!$isTrash): ?>
+                            <details class="batch-edit-panel batch-edit-inline batch-edit-inline-compact">
+                                <summary class="btn dropdown-toggle btn-s batch-edit-toggle">
+                                    <?php _e('批量编辑'); ?> <i class="i-caret-down"></i>
+                                </summary>
+                                <div class="batch-edit-content">
+                                    <div class="batch-edit-grid">
+                                        <label class="batch-edit-field">
+                                            <span><?php _e('状态'); ?></span>
+                                            <select name="batchStatus" form="manage-pages-form">
+                                                <option value=""><?php _e('保持不变'); ?></option>
+                                                <option value="publish"><?php _e('公开'); ?></option>
+                                                <option value="hidden"><?php _e('隐藏'); ?></option>
+                                            </select>
+                                        </label>
+                                        <label class="batch-edit-field">
+                                            <span><?php _e('父级页面'); ?></span>
+                                            <select name="parent" form="manage-pages-form">
+                                                <option value="-1"><?php _e('保持不变'); ?></option>
+                                                <option value="0"><?php _e('不选择'); ?></option>
+                                                <?php \Widget\Contents\Page\Admin::allocWithAlias('batch-options', 'ignoreRequest=1')->to($batchPages); ?>
+                                                <?php while ($batchPages->next()): ?>
+                                                    <option value="<?php $batchPages->cid(); ?>"><?php echo str_repeat('&nbsp;&nbsp;', $batchPages->levels) . $batchPages->title; ?></option>
+                                                <?php endwhile; ?>
+                                            </select>
+                                        </label>
+                                    </div>
+                                    <div class="batch-edit-actions">
+                                        <button type="submit" class="btn primary btn-s" form="manage-pages-form"
+                                                formaction="<?php $security->index('/action/contents-page-edit?do=batch'); ?>"><?php _e('应用到选中项'); ?></button>
+                                    </div>
+                                </div>
+                            </details>
+                        <?php endif; ?>
                     </div>
 
                     <div class="search" role="search">
@@ -41,10 +97,13 @@ $pages = \Widget\Contents\Page\Admin::alloc();
                         <input type="text" class="text-s" placeholder="<?php _e('请输入关键字'); ?>"
                                value="<?php echo $request->filter('html')->keywords; ?>" name="keywords"/>
                         <button type="submit" class="btn btn-s"><?php _e('筛选'); ?></button>
+                        <?php if ($isTrash): ?>
+                            <input type="hidden" name="status" value="trash"/>
+                        <?php endif; ?>
                     </div>
                 </form>
 
-                <form method="post" name="manage_pages" class="operate-form">
+                <form method="post" name="manage_pages" id="manage-pages-form" class="operate-form">
                     <table class="typecho-list-table">
                         <colgroup>
                             <col width="3%" class="kit-hidden-mb"/>
@@ -86,6 +145,8 @@ $pages = \Widget\Contents\Page\Admin::alloc();
 
                                         if ('hidden' == $pages->status) {
                                             echo '<em class="status">' . _t('隐藏') . '</em>';
+                                        } elseif ('trash' == $pages->status) {
+                                            echo '<em class="status">' . _t('回收站') . '</em>';
                                         }
                                         ?>
                                         <a href="<?php $options->adminUrl('write-page.php?cid=' . $pages->cid); ?>"

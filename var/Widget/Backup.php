@@ -75,6 +75,11 @@ class Backup extends BaseOptions implements ActionInterface
     private bool $login = false;
 
     /**
+     * @var bool
+     */
+    private bool $apiMode = false;
+
+    /**
      * 列出已有备份文件
      *
      * @return array
@@ -94,6 +99,27 @@ class Backup extends BaseOptions implements ActionInterface
 
         $this->on($this->request->is('do=export'))->export();
         $this->on($this->request->is('do=import'))->import();
+    }
+
+    /**
+     * API 下载备份
+     */
+    public function exportBackup(): never
+    {
+        $this->export();
+        exit;
+    }
+
+    /**
+     * API 从指定路径恢复备份
+     *
+     * @param string $path
+     */
+    public function restoreFromPath(string $path): never
+    {
+        $this->apiMode = true;
+        $this->extractData($path);
+        exit;
     }
 
     /**
@@ -189,28 +215,24 @@ class Backup extends BaseOptions implements ActionInterface
         if (!empty($_FILES)) {
             $file = array_pop($_FILES);
 
-            if(UPLOAD_ERR_NO_FILE == $file['error']) {
-                Notice::alloc()->set(_t('没有选择任何备份文件'), 'error');
-                $this->response->goBack();
+            if (UPLOAD_ERR_NO_FILE == $file['error']) {
+                $this->restoreFailed(_t('没有选择任何备份文件'));
             }
 
             if (UPLOAD_ERR_OK == $file['error'] && is_uploaded_file($file['tmp_name'])) {
                 $path = $file['tmp_name'];
             } else {
-                Notice::alloc()->set(_t('备份文件上传失败'), 'error');
-                $this->response->goBack();
+                $this->restoreFailed(_t('备份文件上传失败'));
             }
         } else {
             if (!$this->request->is('file')) {
-                Notice::alloc()->set(_t('没有选择任何备份文件'), 'error');
-                $this->response->goBack();
+                $this->restoreFailed(_t('没有选择任何备份文件'));
             }
 
             $path = __TYPECHO_BACKUP_DIR__ . '/' . $this->request->get('file');
 
             if (!file_exists($path)) {
-                Notice::alloc()->set(_t('备份文件不存在'), 'error');
-                $this->response->goBack();
+                $this->restoreFailed(_t('备份文件不存在'), 404);
             }
         }
 
@@ -228,8 +250,7 @@ class Backup extends BaseOptions implements ActionInterface
         $fp = @fopen($file, 'rb');
 
         if (!$fp) {
-            Notice::alloc()->set(_t('无法读取备份文件'), 'error');
-            $this->response->goBack();
+            $this->restoreFailed(_t('无法读取备份文件'));
         }
 
         $fileSize = filesize($file);
@@ -237,16 +258,14 @@ class Backup extends BaseOptions implements ActionInterface
 
         if ($fileSize < $headerSize) {
             @fclose($fp);
-            Notice::alloc()->set(_t('备份文件格式错误'), 'error');
-            $this->response->goBack();
+            $this->restoreFailed(_t('备份文件格式错误'));
         }
 
         $fileHeader = @fread($fp, $headerSize);
 
         if (!$this->parseHeader($fileHeader, $version)) {
             @fclose($fp);
-            Notice::alloc()->set(_t('备份文件格式错误'), 'error');
-            $this->response->goBack();
+            $this->restoreFailed(_t('备份文件格式错误'));
         }
 
         fseek($fp, $fileSize - $headerSize);
@@ -254,8 +273,7 @@ class Backup extends BaseOptions implements ActionInterface
 
         if (!$this->parseHeader($fileFooter, $version)) {
             @fclose($fp);
-            Notice::alloc()->set(_t('备份文件格式错误'), 'error');
-            $this->response->goBack();
+            $this->restoreFailed(_t('备份文件格式错误'));
         }
 
         fseek($fp, $headerSize);
@@ -266,8 +284,7 @@ class Backup extends BaseOptions implements ActionInterface
 
             if (!$data) {
                 @fclose($fp);
-                Notice::alloc()->set(_t('恢复数据出现错误'), 'error');
-                $this->response->goBack();
+                $this->restoreFailed(_t('恢复数据出现错误'));
             }
 
             [$type, $header, $body] = $data;
@@ -283,8 +300,7 @@ class Backup extends BaseOptions implements ActionInterface
         }
 
         @fclose($fp);
-        Notice::alloc()->set(_t('数据恢复完成'), 'success');
-        $this->response->goBack();
+        $this->restoreSucceeded();
     }
 
     /**
@@ -355,9 +371,43 @@ class Backup extends BaseOptions implements ActionInterface
 
             $db->query($db->insert('table.' . $table)->rows($this->applyFields($table, $data)));
         } catch (Exception $e) {
-            Notice::alloc()->set(_t('恢复过程中遇到如下错误: %s', $e->getMessage()), 'error');
-            $this->response->goBack();
+            $this->restoreFailed(_t('恢复过程中遇到如下错误: %s', $e->getMessage()), 500);
         }
+    }
+
+    /**
+     * @param string $message
+     * @param int $status
+     */
+    private function restoreFailed(string $message, int $status = 400): never
+    {
+        if ($this->apiMode) {
+            $this->response->setStatus($status)->throwJson([
+                'success' => false,
+                'message' => $message,
+            ]);
+        }
+
+        Notice::alloc()->set($message, 'error');
+        $this->response->goBack();
+        exit;
+    }
+
+    /**
+     * 恢复成功
+     */
+    private function restoreSucceeded(): never
+    {
+        if ($this->apiMode) {
+            $this->response->throwJson([
+                'success' => true,
+                'message' => _t('数据恢复完成'),
+            ]);
+        }
+
+        Notice::alloc()->set(_t('数据恢复完成'), 'success');
+        $this->response->goBack();
+        exit;
     }
 
     /**

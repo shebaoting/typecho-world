@@ -42,6 +42,8 @@ CREATE INDEX typecho_contents_created ON typecho_contents ("created");
 CREATE INDEX typecho_contents_type_status_created ON typecho_contents ("type", "status", "created");
 CREATE INDEX typecho_contents_author_status_created ON typecho_contents ("authorId", "status", "created");
 CREATE INDEX typecho_contents_parent_type ON typecho_contents ("parent", "type");
+CREATE INDEX typecho_contents_parent_type_modified ON typecho_contents ("parent", "type", "modified");
+CREATE INDEX typecho_contents_type_status_modified ON typecho_contents ("type", "status", "modified");
 
 CREATE TABLE "typecho_fields" ("cid" INTEGER NOT NULL,
   "name" varchar(150) NOT NULL,
@@ -54,12 +56,15 @@ CREATE TABLE "typecho_fields" ("cid" INTEGER NOT NULL,
 CREATE UNIQUE INDEX typecho_fields_cid_name ON typecho_fields ("cid", "name");
 CREATE INDEX typecho_fields_int_value ON typecho_fields ("int_value");
 CREATE INDEX typecho_fields_float_value ON typecho_fields ("float_value");
+CREATE INDEX typecho_fields_name ON typecho_fields ("name");
+CREATE INDEX typecho_fields_name_int_value ON typecho_fields ("name", "int_value");
 
 CREATE TABLE typecho_metas ( "mid" INTEGER NOT NULL PRIMARY KEY, 
 "name" varchar(150) default NULL ,
 "slug" varchar(150) default NULL ,
 "type" varchar(32) NOT NULL , 
 "description" varchar(150) default NULL ,
+"aliases" text default NULL ,
 "count" int(10) default '0' , 
 "order" int(10) default '0' ,
 "parent" int(10) default '0');
@@ -85,6 +90,20 @@ CREATE INDEX typecho_relationships_mid ON typecho_relationships ("mid");
 
 CREATE TABLE typecho_migrations ( "name" varchar(128) NOT NULL PRIMARY KEY,
 "executed" int(10) NOT NULL default '0' );
+
+CREATE TABLE typecho_logs ( "lid" INTEGER NOT NULL PRIMARY KEY,
+"created" int(10) default '0',
+"userId" int(10) default '0',
+"action" varchar(32) default NULL,
+"targetType" varchar(32) default NULL,
+"targetId" int(10) default '0',
+"targetTitle" varchar(150) default NULL,
+"message" text,
+"ip" varchar(64) default NULL );
+
+CREATE INDEX typecho_logs_created ON typecho_logs ("created");
+CREATE INDEX typecho_logs_user_created ON typecho_logs ("userId", "created");
+CREATE INDEX typecho_logs_target ON typecho_logs ("targetType", "targetId");
 
 CREATE TABLE typecho_users ( "uid" INTEGER NOT NULL PRIMARY KEY, 
 "name" varchar(32) default NULL ,

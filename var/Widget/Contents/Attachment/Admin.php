@@ -5,6 +5,7 @@ namespace Widget\Contents\Attachment;
 use Typecho\Config;
 use Typecho\Db;
 use Typecho\Db\Exception;
+use Typecho\Db\Query;
 use Widget\Base\Contents;
 use Widget\Contents\AdminTrait;
 
@@ -64,5 +65,38 @@ class Admin extends Contents
         return new Config($this->db->fetchRow(
             $this->select()->where('table.contents.cid = ?', $this->parent)->limit(1)
         ));
+    }
+
+    /**
+     * 附件搜索同时匹配标题和媒体元信息
+     *
+     * @param Query $select
+     */
+    protected function searchQuery(Query $select)
+    {
+        if ($this->request->is('keywords')) {
+            $keywords = $this->request->filter('search')->get('keywords');
+            $keywordsList = array_filter(explode(' ', $keywords), fn($keyword) => '' !== $keyword);
+
+            if (!$keywordsList) {
+                return;
+            }
+
+            $op = $this->db->getAdapter()->getDriver() == 'pgsql' ? 'ILIKE' : 'LIKE';
+            $args = [];
+            $args[] = implode(' OR ', array_fill(
+                0,
+                count($keywordsList),
+                "table.contents.title {$op} ? OR table.contents.text {$op} ?"
+            ));
+
+            foreach ($keywordsList as $keyword) {
+                $keyword = '%' . $keyword . '%';
+                $args[] = $keyword;
+                $args[] = $keyword;
+            }
+
+            $select->where(...$args);
+        }
     }
 }

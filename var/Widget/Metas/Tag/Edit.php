@@ -73,7 +73,44 @@ class Edit extends Metas implements ActionInterface
         }
 
         $tag = $this->db->fetchRow($select);
-        return !$tag;
+        return !$tag && $this->aliasesAvailable($name);
+    }
+
+    /**
+     * 判断标签别名是否可用
+     *
+     * @param string|null $aliases
+     * @return bool
+     * @throws Exception
+     */
+    public function aliasesAvailable(?string $aliases): bool
+    {
+        $aliases = self::splitTagAliases($aliases);
+
+        if (empty($aliases)) {
+            return true;
+        }
+
+        $select = $this->select('mid', 'name', 'aliases')
+            ->where('type = ?', 'tag');
+
+        if ($this->request->is('mid')) {
+            $select->where('mid <> ?', $this->request->filter('int')->get('mid'));
+        }
+
+        $rows = $this->db->fetchAll($select);
+
+        foreach ($rows as $row) {
+            if (in_array($row['name'], $aliases, true)) {
+                return false;
+            }
+
+            if (array_intersect($aliases, self::splitTagAliases($row['aliases'] ?? ''))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -130,9 +167,10 @@ class Edit extends Metas implements ActionInterface
         }
 
         /** 取出数据 */
-        $tag = $this->request->from('name', 'slug');
+        $tag = $this->request->from('name', 'slug', 'aliases');
         $tag['type'] = 'tag';
         $tag['slug'] = Common::slugName(Common::strBy($tag['slug'] ?? null, $tag['name']));
+        $tag['aliases'] = self::normalizeTagAliases($tag['aliases']);
 
         /** 插入数据 */
         $tag['mid'] = $this->insert($tag);
@@ -183,6 +221,16 @@ class Edit extends Metas implements ActionInterface
         );
         $form->addInput($slug);
 
+        /** 标签别名 */
+        $aliases = new Form\Element\Textarea(
+            'aliases',
+            null,
+            null,
+            _t('标签别名'),
+            _t('多个别名用逗号或换行分隔. 写文章时输入别名会自动归入此标签.')
+        );
+        $form->addInput($aliases);
+
         /** 标签动作 */
         $do = new Form\Element\Hidden('do');
         $form->addInput($do);
@@ -208,6 +256,7 @@ class Edit extends Metas implements ActionInterface
 
             $name->value($meta['name']);
             $slug->value($meta['slug']);
+            $aliases->value($meta['aliases'] ?? '');
             $do->value('update');
             $mid->value($meta['mid']);
             $submit->value(_t('编辑标签'));
@@ -230,6 +279,7 @@ class Edit extends Metas implements ActionInterface
             $name->addRule('xssCheck', _t('请不要标签名称中使用特殊字符'));
             $slug->addRule([$this, 'slugExists'], _t('缩略名已经存在'));
             $slug->addRule('xssCheck', _t('请不要在缩略名中使用特殊字符'));
+            $aliases->addRule([$this, 'aliasesAvailable'], _t('标签别名已经被其他标签使用'));
         }
 
         if ('update' == $action) {
@@ -252,9 +302,10 @@ class Edit extends Metas implements ActionInterface
         }
 
         /** 取出数据 */
-        $tag = $this->request->from('name', 'slug', 'mid');
+        $tag = $this->request->from('name', 'slug', 'aliases', 'mid');
         $tag['type'] = 'tag';
         $tag['slug'] = Common::slugName(Common::strBy($tag['slug'] ?? null, $tag['name']));
+        $tag['aliases'] = self::normalizeTagAliases($tag['aliases']);
 
         /** 更新数据 */
         $this->update($tag, $this->db->sql()->where('mid = ?', $this->request->filter('int')->get('mid')));
@@ -323,6 +374,7 @@ class Edit extends Metas implements ActionInterface
         $tags = $this->request->filter('int')->getArray('mid');
 
         if ($tags) {
+            $this->mergeTagAliases($merge, $tags);
             $this->merge($merge, 'tag', $tags);
 
             /** 提示信息 */
@@ -333,6 +385,56 @@ class Edit extends Metas implements ActionInterface
 
         /** 转向原页 */
         $this->response->redirect(Common::url('manage-tags.php', $this->options->adminUrl));
+    }
+
+    /**
+     * 合并标签时保留源标签名称、缩略名和别名
+     *
+     * @param int $merge
+     * @param array $tags
+     * @return void
+     * @throws Exception
+     */
+    private function mergeTagAliases(int $merge, array $tags)
+    {
+        $target = $this->db->fetchRow($this->select('mid', 'name', 'slug', 'aliases')
+            ->where('mid = ? AND type = ?', $merge, 'tag')
+            ->limit(1));
+
+        if (!$target) {
+            return;
+        }
+
+        $rows = $this->db->fetchAll($this->select('mid', 'name', 'slug', 'aliases')
+            ->where('type = ?', 'tag')
+            ->where('mid IN ?', $tags));
+
+        $aliases = self::splitTagAliases($target['aliases'] ?? '');
+
+        foreach ($rows as $row) {
+            if ((int) $row['mid'] === $merge) {
+                continue;
+            }
+
+            $aliases[] = $row['name'];
+
+            if (!empty($row['slug'])) {
+                $aliases[] = $row['slug'];
+            }
+
+            foreach (self::splitTagAliases($row['aliases'] ?? '') as $alias) {
+                $aliases[] = $alias;
+            }
+        }
+
+        $aliases = array_values(array_filter(array_unique($aliases), function ($alias) use ($target) {
+            return '' !== $alias && $alias !== $target['name'];
+        }));
+
+        $this->update(
+            ['aliases' => self::normalizeTagAliases(implode(',', $aliases))],
+            $this->db->sql()->where('mid = ?', $merge)
+        );
     }
 
     /**

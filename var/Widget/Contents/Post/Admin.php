@@ -74,8 +74,12 @@ class Admin extends Contents
         }
 
         /** 按状态查询 */
-        if ($this->request->is('status=draft')) {
-            $select->where('table.contents.type = ?', 'post_draft');
+        if ($this->request->is('status=trash')) {
+            $select->where('table.contents.type = ? OR table.contents.type = ?', 'post', 'post_draft')
+                ->where('table.contents.status = ?', 'trash');
+        } elseif ($this->request->is('status=draft')) {
+            $select->where('table.contents.type = ?', 'post_draft')
+                ->where('table.contents.status <> ?', 'trash');
         } elseif ($this->request->is('status=waiting')) {
             $select->where(
                 '(table.contents.type = ? OR table.contents.type = ?) AND table.contents.status = ?',
@@ -88,13 +92,34 @@ class Admin extends Contents
                 'table.contents.type = ? OR table.contents.type = ?',
                 'post',
                 'post_draft'
-            );
+            )->where('table.contents.status <> ?', 'trash');
         }
 
         /** 过滤分类 */
         if (null != ($category = $this->request->get('category'))) {
             $select->join('table.relationships', 'table.contents.cid = table.relationships.cid')
                 ->where('table.relationships.mid = ?', $category);
+        }
+
+        /** 过滤内容组织标记 */
+        $contentMeta = $this->request->get('content_meta');
+        if (in_array($contentMeta, ['pinned', 'featured', 'series'], true)) {
+            $fieldName = match ($contentMeta) {
+                'pinned'   => '_pinned',
+                'featured' => '_featured',
+                default    => '_series',
+            };
+
+            $select->join(
+                'table.fields post_meta_filter',
+                "table.contents.cid = post_meta_filter.cid AND post_meta_filter.name = '{$fieldName}'"
+            );
+
+            if ('series' === $contentMeta) {
+                $select->where('post_meta_filter.str_value IS NOT NULL AND post_meta_filter.str_value <> ?', '');
+            } else {
+                $select->where('post_meta_filter.int_value = ?', 1);
+            }
         }
 
         $this->searchQuery($select);

@@ -214,6 +214,30 @@ function install_get_default_routers(): array
                 'widget' => '\Widget\Feed',
                 'action' => 'render',
             ],
+        'sitemap'            =>
+            [
+                'url'    => '/sitemap.xml',
+                'widget' => '\Widget\Sitemap',
+                'action' => 'render',
+            ],
+        'robots'             =>
+            [
+                'url'    => '/robots.txt',
+                'widget' => '\Widget\Robots',
+                'action' => 'render',
+            ],
+        'api_root'           =>
+            [
+                'url'    => '/api',
+                'widget' => '\Widget\Api',
+                'action' => 'render',
+            ],
+        'api'                =>
+            [
+                'url'    => '/api/[endpoint:string]',
+                'widget' => '\Widget\Api',
+                'action' => 'render',
+            ],
         'feedback'           =>
             [
                 'url'    => '[permalink:string]/[type:alpha]',
@@ -260,6 +284,8 @@ function install_get_default_options(): array
             'title' => 'Hello World',
             'description' => 'Your description here.',
             'keywords' => 'typecho,php,blog',
+            'robotsTxt' => '',
+            'navigation' => '',
             'rewrite' => 0,
             'frontPage' => 'recent',
             'frontArchive' => 0,
@@ -307,6 +333,7 @@ function install_get_default_options(): array
             'actionTable' => json_encode([]),
             'panelTable' => json_encode([]),
             'attachmentTypes' => '@image@',
+            'apiToken' => \Typecho\Common::randString(48, true),
             'secret' => \Typecho\Common::randString(32, true),
             'installed' => 0,
             'allowXmlRpc' => 2

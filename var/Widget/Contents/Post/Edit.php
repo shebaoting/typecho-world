@@ -11,6 +11,7 @@ use Typecho\Db\Exception as DbException;
 use Typecho\Date as TypechoDate;
 use Widget\Contents\EditTrait;
 use Widget\Contents\PrepareEditTrait;
+use Widget\Log;
 use Widget\Notice;
 use Widget\Service;
 
@@ -72,6 +73,7 @@ class Edit extends Contents implements ActionInterface
 
             // 完成发布插件接口
             self::pluginHandle()->call('finishPublish', $contents, $this);
+            Log::record('publish', 'post', (int) $this->cid, $this->title, _t('发布文章'));
 
             /** 发送ping */
             $trackback = array_filter(
@@ -99,6 +101,9 @@ class Edit extends Contents implements ActionInterface
 
             // 完成保存插件接口
             self::pluginHandle()->call('finishSave', $contents, $this);
+            if (!$this->request->isAjax()) {
+                Log::record('save', 'post', (int) $this->cid, $this->title, _t('保存草稿'));
+            }
 
             /** 设置高亮 */
             Notice::alloc()->highlight($this->cid);
@@ -210,6 +215,7 @@ class Edit extends Contents implements ActionInterface
 
                 // 完成标记插件接口
                 self::pluginHandle()->call('finishMark', $status, $post, $this);
+                Log::record('batch', 'post', (int) $post, null, _t('标记为%s', $statusList[$status]));
 
                 $markCount++;
             }
@@ -234,6 +240,32 @@ class Edit extends Contents implements ActionInterface
      * @throws DbException
      */
     public function deletePost()
+    {
+        $posts = $this->request->filter('int')->getArray('cid');
+        $deleteCount = 0;
+
+        foreach ($posts as $post) {
+            if ($this->trashContent((int) $post, 'post')) {
+                $deleteCount++;
+            }
+        }
+
+        /** 设置提示信息 */
+        Notice::alloc()->set(
+            $deleteCount > 0 ? _t('文章已经移至回收站') : _t('没有文章被移动'),
+            $deleteCount > 0 ? 'success' : 'notice'
+        );
+
+        /** 返回原网页 */
+        $this->response->goBack();
+    }
+
+    /**
+     * 永久删除文章
+     *
+     * @throws DbException
+     */
+    public function deletePostForever()
     {
         $posts = $this->request->filter('int')->getArray('cid');
         $deleteCount = 0;
@@ -280,6 +312,7 @@ class Edit extends Contents implements ActionInterface
                 // 完成删除插件接口
                 self::pluginHandle()->call('finishDelete', $post, $this);
 
+                Log::record('delete_forever', 'post', $post, null, _t('永久删除文章'));
                 $deleteCount++;
             }
 
@@ -293,12 +326,152 @@ class Edit extends Contents implements ActionInterface
 
         /** 设置提示信息 */
         Notice::alloc()->set(
-            $deleteCount > 0 ? _t('文章已经被删除') : _t('没有文章被删除'),
+            $deleteCount > 0 ? _t('文章已经被永久删除') : _t('没有文章被删除'),
             $deleteCount > 0 ? 'success' : 'notice'
         );
 
         /** 返回原网页 */
         $this->response->goBack();
+    }
+
+    /**
+     * 从回收站恢复文章
+     *
+     * @throws DbException
+     */
+    public function restorePost()
+    {
+        $posts = $this->request->filter('int')->getArray('cid');
+        $restoreCount = 0;
+
+        foreach ($posts as $post) {
+            if ($this->restoreContent((int) $post, 'post')) {
+                $restoreCount++;
+            }
+        }
+
+        Notice::alloc()->set(
+            $restoreCount > 0 ? _t('文章已经恢复') : _t('没有文章被恢复'),
+            $restoreCount > 0 ? 'success' : 'notice'
+        );
+
+        $this->response->goBack();
+    }
+
+    /**
+     * 批量编辑文章
+     *
+     * @throws DbException
+     */
+    public function batchPost()
+    {
+        $posts = $this->request->filter('int')->getArray('cid');
+        $batchCount = 0;
+        $status = $this->request->get('batchStatus', '');
+        $statusList = ['publish', 'hidden', 'private', 'waiting'];
+        $categoryMode = $this->request->get('categoryMode', 'keep');
+        $categories = $this->request->filter('int')->getArray('category');
+        $tagMode = $this->request->get('tagMode', 'keep');
+        $tags = trim($this->request->get('tags', ''));
+        $pinned = $this->request->get('batchPinned', '');
+        $featured = $this->request->get('batchFeatured', '');
+        $seriesMode = $this->request->get('seriesMode', 'keep');
+        $series = trim($this->request->get('series', ''));
+
+        foreach ($posts as $post) {
+            $post = (int) $post;
+            $row = $this->db->fetchRow($this->select()
+                ->where('table.contents.cid = ?', $post)
+                ->where('table.contents.type IN ?', ['post', 'post_draft'])
+                ->limit(1));
+
+            if (!$row || 'trash' == $row['status'] || !$this->isWriteable($this->db->sql()->where('cid = ?', $post))) {
+                continue;
+            }
+
+            $changed = false;
+            $isPublish = 'post' == $row['type'] && 'publish' == $row['status'];
+
+            if ('keep' != $categoryMode && !empty($categories)) {
+                $current = $this->getCategoryIds($post);
+                $next = match ($categoryMode) {
+                    'add' => array_unique(array_merge($current, $categories)),
+                    'remove' => array_values(array_diff($current, $categories)),
+                    default => $categories,
+                };
+
+                $this->setCategories($post, $next, $isPublish, $isPublish);
+                $changed = true;
+            }
+
+            if ('keep' != $tagMode) {
+                $current = $this->getTagNames($post);
+                $next = match ($tagMode) {
+                    'append' => implode(',', array_unique(array_filter(array_merge($current, [$tags])))),
+                    'clear' => '',
+                    default => $tags,
+                };
+
+                $this->setTags($post, $next, $isPublish, $isPublish);
+                $changed = true;
+            }
+
+            if (in_array($pinned, ['0', '1'], true)) {
+                $this->applyToggleField($post, '_pinned', (int) $pinned);
+                $changed = true;
+            }
+
+            if (in_array($featured, ['0', '1'], true)) {
+                $this->applyToggleField($post, '_featured', (int) $featured);
+                $changed = true;
+            }
+
+            if ('set' == $seriesMode) {
+                $this->setField('_series', 'str', $series, $post);
+                $changed = true;
+            } elseif ('clear' == $seriesMode) {
+                $this->db->query($this->db->delete('table.fields')
+                    ->where('cid = ? AND name = ?', $post, '_series'));
+                $changed = true;
+            }
+
+            if (in_array($status, $statusList, true) && $status != $row['status']) {
+                $this->updatePostStatus($post, $status, $row);
+                $changed = true;
+            }
+
+            if ($changed) {
+                Log::record('batch', 'post', $post, $row['title'], _t('批量编辑文章'));
+                $batchCount++;
+            }
+        }
+
+        Notice::alloc()->set(
+            $batchCount > 0 ? _t('文章已经批量更新') : _t('没有文章被更新'),
+            $batchCount > 0 ? 'success' : 'notice'
+        );
+
+        $this->response->goBack();
+    }
+
+    /**
+     * 回滚文章
+     *
+     * @throws DbException
+     */
+    public function rollbackPost()
+    {
+        $draftId = $this->rollbackToHistory('post');
+
+        Notice::alloc()->set(
+            $draftId > 0 ? _t('文章已经回滚为可编辑草稿') : _t('没有文章被回滚'),
+            $draftId > 0 ? 'success' : 'notice'
+        );
+
+        $this->response->redirect(Common::url(
+            'write-post.php?cid=' . $this->request->filter('int')->get('cid'),
+            $this->options->adminUrl
+        ));
     }
 
     /**
@@ -337,6 +510,77 @@ class Edit extends Contents implements ActionInterface
     }
 
     /**
+     * @param int $cid
+     * @return array
+     * @throws DbException
+     */
+    private function getCategoryIds(int $cid): array
+    {
+        return array_column($this->db->fetchAll($this->db->select('table.metas.mid')
+            ->from('table.metas')
+            ->join('table.relationships', 'table.relationships.mid = table.metas.mid')
+            ->where('table.relationships.cid = ?', $cid)
+            ->where('table.metas.type = ?', 'category')), 'mid');
+    }
+
+    /**
+     * @param int $cid
+     * @return array
+     * @throws DbException
+     */
+    private function getTagNames(int $cid): array
+    {
+        return array_column($this->db->fetchAll($this->db->select('table.metas.name')
+            ->from('table.metas')
+            ->join('table.relationships', 'table.relationships.mid = table.metas.mid')
+            ->where('table.relationships.cid = ?', $cid)
+            ->where('table.metas.type = ?', 'tag')), 'name');
+    }
+
+    /**
+     * @param int $cid
+     * @param string $name
+     * @param int $value
+     * @return void
+     * @throws Exception
+     */
+    private function applyToggleField(int $cid, string $name, int $value): void
+    {
+        if ($value > 0) {
+            $this->setField($name, 'int', 1, $cid);
+        } else {
+            $this->db->query($this->db->delete('table.fields')
+                ->where('cid = ? AND name = ?', $cid, $name));
+        }
+    }
+
+    /**
+     * @param int $cid
+     * @param string $status
+     * @param array $row
+     * @return void
+     * @throws DbException
+     */
+    private function updatePostStatus(int $cid, string $status, array $row): void
+    {
+        $this->db->query($this->db->update('table.contents')
+            ->rows(['status' => $status, 'modified' => $this->options->time])
+            ->where('cid = ?', $cid));
+
+        if ('post' == $row['type']) {
+            if ('publish' == $status && 'publish' != $row['status']) {
+                $this->adjustMetaCount($cid, 1);
+            } elseif ('publish' != $status && 'publish' == $row['status']) {
+                $this->adjustMetaCount($cid, -1);
+            }
+        }
+
+        $this->db->query($this->db->update('table.contents')
+            ->rows(['status' => $status])
+            ->where('parent = ? AND type = ?', $cid, 'revision'));
+    }
+
+    /**
      * @return $this
      * @throws DbException
      * @throws Exception
@@ -357,6 +601,10 @@ class Edit extends Contents implements ActionInterface
         $this->on($this->request->is('do=publish') || $this->request->is('do=save'))
             ->prepare()->writePost();
         $this->on($this->request->is('do=delete'))->deletePost();
+        $this->on($this->request->is('do=deleteForever'))->deletePostForever();
+        $this->on($this->request->is('do=restore'))->restorePost();
+        $this->on($this->request->is('do=batch'))->batchPost();
+        $this->on($this->request->is('do=rollback'))->rollbackPost();
         $this->on($this->request->is('do=mark'))->markPost();
         $this->on($this->request->is('do=deleteDraft'))->deletePostDraft();
 

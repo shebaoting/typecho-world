@@ -1,6 +1,7 @@
 <?php if (!defined('__TYPECHO_ADMIN__')) exit; ?>
 <ul class="typecho-option-tabs fix-tabs">
     <li<?php if ($menu->getCurrentMenuUrl() === 'themes.php'): ?> class="current"<?php endif; ?>><a href="<?php $options->adminUrl('themes.php'); ?>"><?php _e('可以使用的外观'); ?></a></li>
+    <li<?php if ($menu->getCurrentMenuUrl() === 'navigation.php'): ?> class="current"<?php endif; ?>><a href="<?php $options->adminUrl('navigation.php'); ?>"><?php _e('导航菜单'); ?></a></li>
     <?php if (\Widget\Themes\Files::isWriteable()): ?>
         <li<?php if ($menu->getCurrentMenuUrl() === 'theme-editor.php'): ?> class="current"<?php endif; ?>><a href="<?php $options->adminUrl('theme-editor.php'); ?>">
                 <?php if (!isset($files) || $options->theme == $files->theme): ?>

@@ -198,11 +198,56 @@
       }
     }
 
-    #advance-panel {
-      summary {
-        line-height: 25px;
+    .post-option-panels {
+      margin: 1em 0;
+    }
+
+    .post-option-panel-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .post-option-toggle {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      width: auto;
+      line-height: 25px;
+
+      .i-caret-down {
+        margin-left: 4px;
+        transition: transform .2s ease;
+        transform-origin: 50% 35%;
+      }
+    }
+
+    .post-option-toggle[aria-expanded="true"] .i-caret-down {
+      transform: rotate(180deg);
+    }
+
+    .post-option-panel-content {
+      width: 100%;
+      min-width: 0;
+      margin-top: 8px;
+
+      > .typecho-post-option:first-child .typecho-label {
+        margin-top: 0;
+      }
+    }
+
+    .seo-option {
+      p {
+        margin: 8px 0 0;
       }
 
+      p:first-child {
+        margin-top: 0;
+      }
+    }
+
+    #advance-panel {
       .visibility-option ul,
       .allow-option ul {
         list-style: none;

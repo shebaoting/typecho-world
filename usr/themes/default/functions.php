@@ -1,6 +1,32 @@
 <?php
 if (!defined('__TYPECHO_ROOT_DIR__')) exit;
 
+function themeConfigSchema()
+{
+    return [
+        [
+            'name'        => 'logoUrl',
+            'type'        => 'url',
+            'label'       => _t('站点 LOGO 地址'),
+            'description' => _t('在这里填入一个图片 URL 地址, 以在网站标题前加上一个 LOGO'),
+            'rules'       => ['url' => _t('请填写一个合法的URL地址')],
+        ],
+        [
+            'name'    => 'sidebarBlock',
+            'type'    => 'checkbox',
+            'label'   => _t('侧边栏显示'),
+            'default' => ['ShowRecentPosts', 'ShowRecentComments', 'ShowCategory', 'ShowArchive', 'ShowOther'],
+            'options' => [
+                'ShowRecentPosts'    => _t('显示最新文章'),
+                'ShowRecentComments' => _t('显示最近回复'),
+                'ShowCategory'       => _t('显示分类'),
+                'ShowArchive'        => _t('显示归档'),
+                'ShowOther'          => _t('显示其它杂项')
+            ],
+        ],
+    ];
+}
+
 function themeConfig($form)
 {
     $logoUrl = new \Typecho\Widget\Helper\Form\Element\Text(

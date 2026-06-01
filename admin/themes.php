@@ -48,6 +48,9 @@ include 'menu.php';
                                 <p><?php echo nl2br($themes->description); ?></p>
                                 <?php if ($options->theme != $themes->name || $options->missingTheme): ?>
                                     <p>
+                                        <a class="preview"
+                                           href="<?php echo rtrim($options->siteUrl, '/') . '/?themePreview=' . rawurlencode($themes->name); ?>"
+                                           target="_blank" rel="noopener"><?php _e('预览'); ?></a> &nbsp;
                                         <?php if (\Widget\Themes\Files::isWriteable()): ?>
                                             <a class="edit"
                                                href="<?php $options->adminUrl('theme-editor.php?theme=' . $themes->name); ?>"><?php _e('编辑'); ?></a> &nbsp;

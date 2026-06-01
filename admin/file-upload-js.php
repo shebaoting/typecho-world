@@ -127,6 +127,7 @@ $(document).ready(function() {
         const li = $('#' + file.id).removeClass('loading').data('cid', attachment.cid)
             .data('url', attachment.url)
             .data('image', attachment.isImage)
+            .data('alt', attachment.alt || attachment.title)
             .html('<input type="hidden" name="attachment[]" value="' + attachment.cid + '" />'
                 + '<a class="insert" target="_blank" href="###" title="<?php _e('点击插入文件'); ?>">'
                 + attachment.title + '</a><div class="info">' + attachment.bytes
@@ -212,11 +213,34 @@ $(document).ready(function() {
 
     function attachInsertEvent (el) {
         $('.insert', el).click(function () {
-            var t = $(this), p = t.parents('li');
-            Typecho.insertFileToEditor(t.text(), p.data('url'), p.data('image'));
+            var t = $(this), p = t.closest('li');
+            Typecho.insertFileToEditor(p.data('alt') || t.text(), p.data('url'), p.data('image'));
             return false;
         });
     }
+
+    function attachReuseEvent (el) {
+        $('.reuse', el).click(function () {
+            var p = $(this).closest('li');
+            Typecho.insertFileToEditor(p.data('alt'), p.data('url'), p.data('image'));
+            return false;
+        });
+    }
+
+    $('#attachment-library-search').on('input', function () {
+        var keywords = $.trim($(this).val()).toLowerCase(),
+            matched = 0;
+
+        $('#attachment-library-list li').each(function () {
+            var item = $(this),
+                visible = !keywords || String(item.data('keywords')).toLowerCase().indexOf(keywords) >= 0;
+
+            item.toggle(visible);
+            matched += visible ? 1 : 0;
+        });
+
+        $('#attachment-library-empty').toggleClass('hidden', matched > 0);
+    });
 
     function attachDeleteEvent (el) {
         var file = $('a.insert', el).text();
@@ -240,6 +264,10 @@ $(document).ready(function() {
     $('#file-list li').each(function () {
         attachInsertEvent(this);
         attachDeleteEvent(this);
+    });
+
+    $('#attachment-library-list li').each(function () {
+        attachReuseEvent(this);
     });
 });
 </script>

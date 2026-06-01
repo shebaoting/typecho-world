@@ -4,7 +4,7 @@
 <head>
     <meta charset="<?php $this->options->charset(); ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php $this->archiveTitle('', '', ' | '); ?><?php $this->options->title(); ?><?php if ($this->is('index')): ?> | <?php $this->options->description() ?><?php endif; ?></title>
+    <title><?php $this->seoTitle(' | '); ?><?php if ($this->is('index')): ?> | <?php $this->options->description() ?><?php endif; ?></title>
     <link rel="stylesheet" href="<?php $this->options->themeUrl('static/css/style.css'); ?>">
     <?php if ($this->options->colorSchema == 'customize'): ?>
     <link rel="stylesheet" href="<?php $this->options->themeUrl('theme.css'); ?>">
@@ -40,16 +40,7 @@
         <input type="checkbox" id="nav-toggler">
 
         <ul class="nav-menu">
-            <li>
-                <a href="<?php $this->options->siteUrl(); ?>"<?php if ($this->is('index')): ?> class="active"<?php endif; ?>><?php _e('首页'); ?></a>
-            </li>
-
-            <?php \Widget\Contents\Page\Rows::alloc()->to($pages); ?>
-            <?php while ($pages->next()): ?>
-            <li>
-                <a href="<?php $pages->permalink(); ?>"<?php if ($this->is('page', $pages->slug)): ?> class="active"<?php endif; ?>><?php $pages->title(); ?></a>
-            </li>
-            <?php endwhile; ?>
+            <?php $this->navMenu('<li><a href="{url}"{class}{target}>{label}</a></li>', 'active'); ?>
             <li>
                 <form method="post" action="<?php $this->options->siteUrl(); ?>">
                     <input type="search" id="s" name="s">

@@ -144,39 +144,101 @@ while ($parents->next()) {
 
                     <?php \Typecho\Plugin::factory('admin/write-page.php')->call('option', $page); ?>
 
-                    <details id="advance-panel">
-                        <summary class="btn btn-xs"><?php _e('高级选项'); ?> <i class="i-caret-down"></i></summary>
+                    <?php
+                    $seoTitle = (string) $page->getEditFieldValue('_seo_title', '');
+                    $seoDescription = (string) $page->getEditFieldValue('_seo_description', '');
+                    $ogImage = (string) $page->getEditFieldValue('_og_image', '');
+                    ?>
+                    <div class="typecho-post-option post-option-panels">
+                        <div class="post-option-panel-actions">
+                            <button type="button" class="btn btn-xs post-option-toggle"
+                                    data-panel="#advance-panel" aria-controls="advance-panel" aria-expanded="false">
+                                <?php _e('高级选项'); ?> <i class="i-caret-down"></i>
+                            </button>
+                            <button type="button" class="btn btn-xs post-option-toggle"
+                                    data-panel="#seo-panel" aria-controls="seo-panel" aria-expanded="false">
+                                <?php _e('SEO'); ?> <i class="i-caret-down"></i>
+                            </button>
+                        </div>
 
-                        <section class="typecho-post-option visibility-option">
-                            <label for="visibility" class="typecho-label"><?php _e('公开度'); ?></label>
-                            <p>
-                                <select id="visibility" name="visibility">
-                                    <option
-                                        value="publish"<?php if ($page->status == 'publish' || !$page->status): ?> selected<?php endif; ?>><?php _e('公开'); ?></option>
-                                    <option
-                                        value="hidden"<?php if ($page->status == 'hidden'): ?> selected<?php endif; ?>><?php _e('隐藏'); ?></option>
-                                </select>
-                            </p>
-                        </section>
+                        <div id="advance-panel" class="post-option-panel-content hidden">
 
-                        <section class="typecho-post-option allow-option">
-                            <label class="typecho-label"><?php _e('权限控制'); ?></label>
-                            <ul>
-                                <li><input id="allowComment" name="allowComment" type="checkbox" value="1"
-                                           <?php if ($page->allow('comment')): ?>checked="true"<?php endif; ?> />
-                                    <label for="allowComment"><?php _e('允许评论'); ?></label></li>
-                                <li><input id="allowPing" name="allowPing" type="checkbox" value="1"
-                                           <?php if ($page->allow('ping')): ?>checked="true"<?php endif; ?> />
-                                    <label for="allowPing"><?php _e('允许被引用'); ?></label></li>
-                                <li><input id="allowFeed" name="allowFeed" type="checkbox" value="1"
-                                           <?php if ($page->allow('feed')): ?>checked="true"<?php endif; ?> />
-                                    <label for="allowFeed"><?php _e('允许在聚合中出现'); ?></label></li>
-                            </ul>
-                        </section>
+                            <section class="typecho-post-option visibility-option">
+                                <label for="visibility" class="typecho-label"><?php _e('公开度'); ?></label>
+                                <p>
+                                    <select id="visibility" name="visibility">
+                                        <option
+                                            value="publish"<?php if ($page->status == 'publish' || !$page->status): ?> selected<?php endif; ?>><?php _e('公开'); ?></option>
+                                        <option
+                                            value="hidden"<?php if ($page->status == 'hidden'): ?> selected<?php endif; ?>><?php _e('隐藏'); ?></option>
+                                    </select>
+                                </p>
+                            </section>
 
-                        <?php \Typecho\Plugin::factory('admin/write-page.php')->call('advanceOption', $page); ?>
-                    </details>
+                            <section class="typecho-post-option allow-option">
+                                <label class="typecho-label"><?php _e('权限控制'); ?></label>
+                                <ul>
+                                    <li><input id="allowComment" name="allowComment" type="checkbox" value="1"
+                                               <?php if ($page->allow('comment')): ?>checked="true"<?php endif; ?> />
+                                        <label for="allowComment"><?php _e('允许评论'); ?></label></li>
+                                    <li><input id="allowPing" name="allowPing" type="checkbox" value="1"
+                                               <?php if ($page->allow('ping')): ?>checked="true"<?php endif; ?> />
+                                        <label for="allowPing"><?php _e('允许被引用'); ?></label></li>
+                                    <li><input id="allowFeed" name="allowFeed" type="checkbox" value="1"
+                                               <?php if ($page->allow('feed')): ?>checked="true"<?php endif; ?> />
+                                        <label for="allowFeed"><?php _e('允许在聚合中出现'); ?></label></li>
+                                </ul>
+                            </section>
+
+                            <?php \Typecho\Plugin::factory('admin/write-page.php')->call('advanceOption', $page); ?>
+                        </div><!-- end #advance-panel -->
+
+                        <div id="seo-panel" class="post-option-panel-content hidden">
+                            <section class="typecho-post-option seo-option">
+                                <p>
+                                    <label for="seo-title" class="sr-only"><?php _e('SEO 标题'); ?></label>
+                                    <input id="seo-title" name="fields[_seo_title]" type="text"
+                                           value="<?php echo htmlspecialchars($seoTitle); ?>" class="w-100 text"
+                                           placeholder="<?php _e('SEO 标题'); ?>"/>
+                                </p>
+                                <p>
+                                    <label for="seo-description" class="sr-only"><?php _e('SEO 描述'); ?></label>
+                                    <textarea id="seo-description" name="fields[_seo_description]" class="w-100"
+                                              rows="3" placeholder="<?php _e('SEO 描述'); ?>"><?php echo htmlspecialchars($seoDescription); ?></textarea>
+                                </p>
+                                <p>
+                                    <label for="og-image" class="sr-only"><?php _e('Open Graph 图片地址'); ?></label>
+                                    <input id="og-image" name="fields[_og_image]" type="text"
+                                           value="<?php echo htmlspecialchars($ogImage); ?>" class="w-100 text"
+                                           placeholder="<?php _e('Open Graph 图片地址'); ?>"/>
+                                </p>
+                            </section>
+                        </div><!-- end #seo-panel -->
+                    </div>
+
                     <?php if ($page->have()): ?>
+                        <?php $historyItems = $page->getHistoryItems(); ?>
+                        <?php if (!empty($historyItems)): ?>
+                            <section class="typecho-post-option revision-history">
+                                <label class="typecho-label"><?php _e('修订历史'); ?></label>
+                                <ul>
+                                    <?php foreach ($historyItems as $history): ?>
+                                        <?php
+                                        $historyDate = new \Typecho\Date($history['modified']);
+                                        $historyLabel = match ($history['type']) {
+                                            'revision' => _t('当前修订'),
+                                            'history'  => _t('发布历史'),
+                                            default    => _t('草稿快照'),
+                                        };
+                                        ?>
+                                        <li>
+                                            <span><?php echo $historyLabel; ?> · <?php echo $historyDate->word(); ?></span>
+                                            <a href="<?php echo $security->getIndex('/action/contents-page-edit?do=rollback&cid=' . $page->cid . '&history=' . $history['cid']); ?>"><?php _e('回滚'); ?></a>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </section>
+                        <?php endif; ?>
                         <?php $modified = new \Typecho\Date($page->modified); ?>
                         <section class="typecho-post-option">
                             <p class="description">

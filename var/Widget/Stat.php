@@ -12,14 +12,18 @@ if (!defined('__TYPECHO_ROOT_DIR__')) {
  * @property-read int $publishedPostsNum
  * @property-read int $waitingPostsNum
  * @property-read int $draftPostsNum
+ * @property-read int $trashPostsNum
  * @property-read int $myPublishedPostsNum
  * @property-read int $myWaitingPostsNum
  * @property-read int $myDraftPostsNum
+ * @property-read int $myTrashPostsNum
  * @property-read int $currentPublishedPostsNum
  * @property-read int $currentWaitingPostsNum
  * @property-read int $currentDraftPostsNum
+ * @property-read int $currentTrashPostsNum
  * @property-read int $publishedPagesNum
  * @property-read int $draftPagesNum
+ * @property-read int $trashPagesNum
  * @property-read int $publishedCommentsNum
  * @property-read int $waitingCommentsNum
  * @property-read int $spamCommentsNum
@@ -78,7 +82,21 @@ class Stat extends Base
     {
         return $this->db->fetchObject($this->db->select(['COUNT(cid)' => 'num'])
             ->from('table.contents')
-            ->where('table.contents.type = ?', 'post_draft'))->num;
+            ->where('table.contents.type = ?', 'post_draft')
+            ->where('table.contents.status <> ?', 'trash'))->num;
+    }
+
+    /**
+     * 获取回收站文章数目
+     *
+     * @return integer
+     */
+    protected function ___trashPostsNum(): int
+    {
+        return $this->db->fetchObject($this->db->select(['COUNT(cid)' => 'num'])
+            ->from('table.contents')
+            ->where('table.contents.type = ? OR table.contents.type = ?', 'post', 'post_draft')
+            ->where('table.contents.status = ?', 'trash'))->num;
     }
 
     /**
@@ -119,6 +137,21 @@ class Stat extends Base
         return $this->db->fetchObject($this->db->select(['COUNT(cid)' => 'num'])
             ->from('table.contents')
             ->where('table.contents.type = ?', 'post_draft')
+            ->where('table.contents.status <> ?', 'trash')
+            ->where('table.contents.authorId = ?', $this->user->uid))->num;
+    }
+
+    /**
+     * 获取当前用户回收站文章数目
+     *
+     * @return integer
+     */
+    protected function ___myTrashPostsNum(): int
+    {
+        return $this->db->fetchObject($this->db->select(['COUNT(cid)' => 'num'])
+            ->from('table.contents')
+            ->where('table.contents.type = ? OR table.contents.type = ?', 'post', 'post_draft')
+            ->where('table.contents.status = ?', 'trash')
             ->where('table.contents.authorId = ?', $this->user->uid))->num;
     }
 
@@ -160,6 +193,21 @@ class Stat extends Base
         return $this->db->fetchObject($this->db->select(['COUNT(cid)' => 'num'])
             ->from('table.contents')
             ->where('table.contents.type = ?', 'post_draft')
+            ->where('table.contents.status <> ?', 'trash')
+            ->where('table.contents.authorId = ?', $this->request->filter('int')->get('uid')))->num;
+    }
+
+    /**
+     * 获取当前用户回收站文章数目
+     *
+     * @return integer
+     */
+    protected function ___currentTrashPostsNum(): int
+    {
+        return $this->db->fetchObject($this->db->select(['COUNT(cid)' => 'num'])
+            ->from('table.contents')
+            ->where('table.contents.type = ? OR table.contents.type = ?', 'post', 'post_draft')
+            ->where('table.contents.status = ?', 'trash')
             ->where('table.contents.authorId = ?', $this->request->filter('int')->get('uid')))->num;
     }
 
@@ -185,7 +233,21 @@ class Stat extends Base
     {
         return $this->db->fetchObject($this->db->select(['COUNT(cid)' => 'num'])
             ->from('table.contents')
-            ->where('table.contents.type = ?', 'page_draft'))->num;
+            ->where('table.contents.type = ?', 'page_draft')
+            ->where('table.contents.status <> ?', 'trash'))->num;
+    }
+
+    /**
+     * 获取回收站页面数目
+     *
+     * @return integer
+     */
+    protected function ___trashPagesNum(): int
+    {
+        return $this->db->fetchObject($this->db->select(['COUNT(cid)' => 'num'])
+            ->from('table.contents')
+            ->where('table.contents.type = ? OR table.contents.type = ?', 'page', 'page_draft')
+            ->where('table.contents.status = ?', 'trash'))->num;
     }
 
     /**

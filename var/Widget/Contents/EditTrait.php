@@ -10,12 +10,25 @@ use Typecho\Widget\Helper\Form\Element;
 use Typecho\Widget\Helper\Layout;
 use Widget\Base\Contents;
 use Widget\Base\Metas;
+use Widget\Log;
 
 /**
  * 内容编辑组件
  */
 trait EditTrait
 {
+    private const CORE_FIELD_NAMES = [
+        '_pinned'               => true,
+        '_featured'             => true,
+        '_series'               => true,
+        '_seo_title'            => true,
+        '_seo_description'      => true,
+        '_og_image'             => true,
+        '_snapshot_slug'        => true,
+        '_snapshot_source_type' => true,
+        '_trash_status'         => true,
+    ];
+
     /**
      * 删除自定义字段
      *
@@ -190,6 +203,10 @@ trait EditTrait
                 ->where('cid = ?', isset($this->draft) ? $this->draft['cid'] : $this->cid));
 
             foreach ($rows as $row) {
+                if (isset(self::CORE_FIELD_NAMES[$row['name']])) {
+                    continue;
+                }
+
                 $isFieldReadOnly = Contents::pluginHandle()
                     ->trigger($plugged)->call('isFieldReadOnly', $row['name']);
 
@@ -323,10 +340,58 @@ trait EditTrait
 
         $customFields = $this->request->getArray('fields');
         foreach ($customFields as $key => $val) {
-            $fields[$key] = [is_array($val) ? 'json' : 'str', $val];
+            $type = is_array($val) ? 'json' : 'str';
+            $name = $key;
+
+            if (strpos($key, ':') > 0) {
+                [$fieldType, $fieldName] = explode(':', $key, 2);
+
+                if (in_array($fieldType, ['str', 'int', 'float', 'json'])) {
+                    $type = $fieldType;
+                    $name = $fieldName;
+                }
+            }
+
+            if ('_series' === $name) {
+                $val = trim((string) $val);
+
+                if ('' === $val) {
+                    continue;
+                }
+            }
+
+            $fields[$name] = [$type, $val];
         }
 
         return $fields;
+    }
+
+    /**
+     * 读取编辑目标的字段值, 有草稿时优先读取草稿字段
+     *
+     * @param string $name
+     * @param mixed $default
+     * @return mixed
+     * @throws DbException
+     */
+    public function getEditFieldValue(string $name, $default = null)
+    {
+        if (!$this->checkFieldName($name) || !$this->have()) {
+            return $default;
+        }
+
+        $cid = isset($this->draft) && !empty($this->draft['cid']) ? $this->draft['cid'] : $this->cid;
+        $row = $this->db->fetchRow($this->db->select()->from('table.fields')
+            ->where('cid = ? AND name = ?', $cid, $name)
+            ->limit(1));
+
+        if (!$row) {
+            return $default;
+        }
+
+        return 'json' == $row['type']
+            ? json_decode($row['str_value'], true)
+            : $row[$row['type'] . '_value'];
     }
 
     /**
@@ -346,6 +411,394 @@ trait EditTrait
             /** 删除标签 */
             $this->setTags($cid, null, false, false);
         }
+    }
+
+    /**
+     * 获取内容历史与草稿快照
+     *
+     * @param int $cid
+     * @param int $limit
+     * @return array
+     * @throws DbException
+     */
+    public function getHistoryItems(int $cid = 0, int $limit = 12): array
+    {
+        $cid = $cid ?: (int) $this->cid;
+
+        if ($cid <= 0) {
+            return [];
+        }
+
+        return $this->db->fetchAll($this->select()
+            ->where('table.contents.parent = ?', $cid)
+            ->where('table.contents.type IN ?', ['revision', 'history', 'snapshot'])
+            ->order('table.contents.modified', \Typecho\Db::SORT_DESC)
+            ->order('table.contents.cid', \Typecho\Db::SORT_DESC)
+            ->limit($limit));
+    }
+
+    /**
+     * 创建历史记录或草稿快照
+     *
+     * @param int $sourceCid
+     * @param int $parentCid
+     * @param string $type
+     * @param bool $hasMetas
+     * @return int
+     * @throws DbException|Exception
+     */
+    protected function createContentSnapshot(
+        int $sourceCid,
+        int $parentCid,
+        string $type = 'snapshot',
+        bool $hasMetas = true
+    ): int {
+        if (!in_array($type, ['history', 'snapshot'], true)) {
+            return 0;
+        }
+
+        $source = $this->db->fetchRow($this->select()
+            ->where('table.contents.cid = ?', $sourceCid)
+            ->limit(1));
+
+        if (!$source || in_array($source['type'], ['history', 'snapshot'], true)) {
+            return 0;
+        }
+
+        $snapshotId = $this->insert([
+            'title'        => $source['title'],
+            'slug'         => $type . '-' . $parentCid . '-' . $sourceCid . '-' . time(),
+            'created'      => $source['created'],
+            'text'         => $source['text'],
+            'order'        => $source['order'],
+            'authorId'     => $source['authorId'],
+            'template'     => $source['template'],
+            'type'         => $type,
+            'status'       => $source['status'],
+            'password'     => $source['password'],
+            'commentsNum'  => 0,
+            'allowComment' => $source['allowComment'],
+            'allowPing'    => $source['allowPing'],
+            'allowFeed'    => $source['allowFeed'],
+            'parent'       => $parentCid,
+        ]);
+
+        if ($snapshotId > 0) {
+            if ($hasMetas) {
+                $this->copyMetas($sourceCid, $snapshotId);
+            }
+
+            $this->copyFields($sourceCid, $snapshotId);
+            $this->setField('_snapshot_slug', 'str', $source['slug'], $snapshotId);
+            $this->setField('_snapshot_source_type', 'str', $source['type'], $snapshotId);
+            $this->pruneHistory($parentCid);
+        }
+
+        return $snapshotId;
+    }
+
+    /**
+     * 在覆盖草稿前保留一个快照
+     *
+     * @param bool $hasMetas
+     * @return void
+     * @throws DbException|Exception
+     */
+    protected function snapshotDraftBeforeSave(bool $hasMetas = true): void
+    {
+        if (!$this->draft || empty($this->draft['cid'])) {
+            return;
+        }
+
+        $parentCid = (int) $this->cid;
+        if ($parentCid <= 0) {
+            return;
+        }
+
+        $last = $this->db->fetchRow($this->select('modified')
+            ->where('table.contents.parent = ?', $parentCid)
+            ->where('table.contents.type = ?', 'snapshot')
+            ->order('table.contents.modified', \Typecho\Db::SORT_DESC)
+            ->limit(1));
+
+        if ($this->request->isAjax() && $last && $this->options->time - (int) $last['modified'] < 600) {
+            return;
+        }
+
+        if ($this->createContentSnapshot((int) $this->draft['cid'], $parentCid, 'snapshot', $hasMetas) > 0) {
+            Log::record('snapshot', $this->baseContentType(), $parentCid, $this->title, _t('自动保存草稿快照'));
+        }
+    }
+
+    /**
+     * 在发布覆盖前保留一份历史版本
+     *
+     * @param bool $hasMetas
+     * @return void
+     * @throws DbException|Exception
+     */
+    protected function snapshotPublishedBeforePublish(bool $hasMetas = true): void
+    {
+        if (!$this->have() || preg_match("/_draft$/", $this->type)) {
+            return;
+        }
+
+        $this->createContentSnapshot((int) $this->cid, (int) $this->cid, 'history', $hasMetas);
+    }
+
+    /**
+     * 回滚到指定历史版本, 并以可编辑草稿呈现
+     *
+     * @param string $baseType
+     * @param bool $hasMetas
+     * @return int
+     * @throws DbException|Exception
+     */
+    protected function rollbackToHistory(string $baseType, bool $hasMetas = true): int
+    {
+        $cid = $this->request->filter('int')->get('cid');
+        $historyId = $this->request->filter('int')->get('history');
+
+        $target = $this->db->fetchRow($this->select()
+            ->where('table.contents.cid = ?', $cid)
+            ->where('table.contents.type IN ?', [$baseType, $baseType . '_draft'])
+            ->limit(1));
+
+        $history = $this->db->fetchRow($this->select()
+            ->where('table.contents.cid = ?', $historyId)
+            ->where('table.contents.parent = ?', $cid)
+            ->where('table.contents.type IN ?', ['revision', 'history', 'snapshot'])
+            ->limit(1));
+
+        if (!$target || !$history || !$this->isWriteable($this->db->sql()->where('cid = ?', $cid))) {
+            return 0;
+        }
+
+        $this->createContentSnapshot($cid, $cid, 'history', $hasMetas);
+
+        $draft = $this->db->fetchRow($this->select('cid')
+            ->where('table.contents.parent = ?', $cid)
+            ->where('table.contents.type = ?', 'revision')
+            ->limit(1));
+        $draftId = (int) ($draft['cid'] ?? 0);
+        $snapshotSlug = $this->getStoredField($historyId, '_snapshot_slug', $target['slug']);
+        $rows = [
+            'title'        => $history['title'],
+            'slug'         => $snapshotSlug,
+            'created'      => $history['created'],
+            'text'         => $history['text'],
+            'order'        => $history['order'],
+            'authorId'     => $target['authorId'],
+            'template'     => $history['template'],
+            'type'         => $baseType . '_draft' == $target['type'] ? $target['type'] : 'revision',
+            'status'       => $target['status'],
+            'password'     => $history['password'],
+            'allowComment' => $history['allowComment'],
+            'allowPing'    => $history['allowPing'],
+            'allowFeed'    => $history['allowFeed'],
+            'parent'       => $baseType . '_draft' == $target['type'] ? (int) $target['parent'] : $cid,
+        ];
+
+        if ($baseType . '_draft' == $target['type']) {
+            $draftId = $cid;
+            $this->update($rows, $this->db->sql()->where('cid = ?', $draftId));
+        } elseif ($draftId > 0) {
+            $this->update($rows, $this->db->sql()->where('cid = ?', $draftId));
+        } else {
+            $draftId = $this->insert($rows);
+        }
+
+        if ($draftId > 0) {
+            if ($hasMetas) {
+                $this->copyMetas($historyId, $draftId);
+            }
+
+            $this->copyFields($historyId, $draftId);
+            Log::record('rollback', $baseType, $cid, $target['title'], _t('已回滚到历史版本'));
+        }
+
+        return $draftId;
+    }
+
+    /**
+     * 复制分类和标签关系, 不改变计数
+     *
+     * @param int $fromCid
+     * @param int $toCid
+     * @return void
+     * @throws DbException
+     */
+    protected function copyMetas(int $fromCid, int $toCid): void
+    {
+        $this->db->query($this->db->delete('table.relationships')->where('cid = ?', $toCid));
+        $rows = $this->db->fetchAll($this->db->select()->from('table.relationships')->where('cid = ?', $fromCid));
+
+        foreach ($rows as $row) {
+            $this->db->query($this->db->insert('table.relationships')->rows([
+                'cid' => $toCid,
+                'mid' => $row['mid'],
+            ]));
+        }
+    }
+
+    /**
+     * 复制自定义字段
+     *
+     * @param int $fromCid
+     * @param int $toCid
+     * @return void
+     * @throws DbException
+     */
+    protected function copyFields(int $fromCid, int $toCid): void
+    {
+        $this->deleteFields($toCid);
+        $rows = $this->db->fetchAll($this->db->select()->from('table.fields')->where('cid = ?', $fromCid));
+
+        foreach ($rows as $row) {
+            $row['cid'] = $toCid;
+            $this->db->query($this->db->insert('table.fields')->rows($row));
+        }
+    }
+
+    /**
+     * @param int $cid
+     * @param string $name
+     * @param mixed $default
+     * @return mixed
+     * @throws DbException
+     */
+    protected function getStoredField(int $cid, string $name, $default = null)
+    {
+        $row = $this->db->fetchRow($this->db->select()->from('table.fields')
+            ->where('cid = ? AND name = ?', $cid, $name)
+            ->limit(1));
+
+        if (!$row) {
+            return $default;
+        }
+
+        return 'json' == $row['type']
+            ? json_decode($row['str_value'], true)
+            : $row[$row['type'] . '_value'];
+    }
+
+    /**
+     * @param int $parentCid
+     * @param int $limit
+     * @return void
+     * @throws DbException
+     */
+    protected function pruneHistory(int $parentCid, int $limit = 30): void
+    {
+        $rows = $this->db->fetchAll($this->select('cid')
+            ->where('table.contents.parent = ?', $parentCid)
+            ->where('table.contents.type IN ?', ['history', 'snapshot'])
+            ->order('table.contents.modified', \Typecho\Db::SORT_DESC)
+            ->order('table.contents.cid', \Typecho\Db::SORT_DESC));
+
+        foreach (array_slice($rows, $limit) as $row) {
+            $this->deleteContent((int) $row['cid']);
+            $this->deleteFields((int) $row['cid']);
+        }
+    }
+
+    /**
+     * 将内容移入回收站
+     *
+     * @param int $cid
+     * @param string $baseType
+     * @param bool $hasMetas
+     * @return bool
+     * @throws DbException|Exception
+     */
+    protected function trashContent(int $cid, string $baseType, bool $hasMetas = true): bool
+    {
+        $row = $this->db->fetchRow($this->select()
+            ->where('table.contents.cid = ?', $cid)
+            ->where('table.contents.type IN ?', [$baseType, $baseType . '_draft'])
+            ->limit(1));
+
+        if (!$row || 'trash' == $row['status'] || !$this->isWriteable($this->db->sql()->where('cid = ?', $cid))) {
+            return false;
+        }
+
+        $this->setField('_trash_status', 'str', $row['status'], $cid);
+        $this->db->query($this->db->update('table.contents')
+            ->rows(['status' => 'trash', 'modified' => $this->options->time])
+            ->where('cid = ?', $cid));
+
+        if ($hasMetas && $row['type'] == $baseType && 'publish' == $row['status']) {
+            $this->adjustMetaCount($cid, -1);
+        }
+
+        Log::record('trash', $baseType, $cid, $row['title'], _t('移至回收站'));
+        return true;
+    }
+
+    /**
+     * 从回收站恢复
+     *
+     * @param int $cid
+     * @param string $baseType
+     * @param bool $hasMetas
+     * @return bool
+     * @throws DbException|Exception
+     */
+    protected function restoreContent(int $cid, string $baseType, bool $hasMetas = true): bool
+    {
+        $row = $this->db->fetchRow($this->select()
+            ->where('table.contents.cid = ?', $cid)
+            ->where('table.contents.type IN ?', [$baseType, $baseType . '_draft'])
+            ->where('table.contents.status = ?', 'trash')
+            ->limit(1));
+
+        if (!$row || !$this->isWriteable($this->db->sql()->where('cid = ?', $cid))) {
+            return false;
+        }
+
+        $status = (string) $this->getStoredField($cid, '_trash_status', 'hidden');
+        if (!in_array($status, ['publish', 'hidden', 'private', 'waiting'], true)) {
+            $status = 'hidden';
+        }
+
+        $this->db->query($this->db->update('table.contents')
+            ->rows(['status' => $status, 'modified' => $this->options->time])
+            ->where('cid = ?', $cid));
+        $this->db->query($this->db->delete('table.fields')->where('cid = ? AND name = ?', $cid, '_trash_status'));
+
+        if ($hasMetas && $row['type'] == $baseType && 'publish' == $status) {
+            $this->adjustMetaCount($cid, 1);
+        }
+
+        Log::record('restore', $baseType, $cid, $row['title'], _t('从回收站恢复'));
+        return true;
+    }
+
+    /**
+     * @param int $cid
+     * @param int $step
+     * @return void
+     * @throws DbException
+     */
+    protected function adjustMetaCount(int $cid, int $step): void
+    {
+        $op = $step >= 0 ? '+' : '-';
+        $value = abs($step);
+        $metas = $this->db->fetchAll($this->db->select()->from('table.relationships')->where('cid = ?', $cid));
+
+        foreach ($metas as $meta) {
+            $this->db->query($this->db->update('table.metas')
+                ->expression('count', 'count ' . $op . ' ' . $value)
+                ->where('mid = ? AND (type = ? OR type = ?)', $meta['mid'], 'category', 'tag'));
+        }
+    }
+
+    /**
+     * @return string
+     */
+    protected function baseContentType(): string
+    {
+        return preg_replace('/_draft$/', '', $this->type ?: 'post');
     }
 
     /**
@@ -572,6 +1025,7 @@ trait EditTrait
     {
         /** 发布内容, 检查是否具有直接发布的权限 */
         $this->checkStatus($contents);
+        $this->snapshotPublishedBeforePublish($hasMetas);
 
         /** 真实的内容id */
         $realId = 0;
@@ -645,6 +1099,7 @@ trait EditTrait
     {
         /** 发布内容, 检查是否具有直接发布的权限 */
         $this->checkStatus($contents);
+        $this->snapshotDraftBeforeSave($hasMetas);
 
         /** 真实的内容id */
         $realId = 0;

@@ -46,6 +46,9 @@ if (!defined('__TYPECHO_ROOT_DIR__')) {
  * @property string $title
  * @property string $description
  * @property string $keywords
+ * @property string $robotsTxt
+ * @property string $navigation
+ * @property string $apiToken
  * @property string $lang
  * @property string $theme
  * @property string|null $missingTheme

@@ -46,6 +46,9 @@ include 'menu.php';
                                     <input type="checkbox" value="<?php $tags->mid(); ?>" name="mid[]"/>
                                     <span
                                         rel="<?php echo $request->makeUriByRequest('mid=' . $tags->mid); ?>"><?php $tags->name(); ?></span>
+                                    <?php if ($tags->aliases): ?>
+                                        <span class="description">(<?php echo htmlspecialchars($tags->aliases); ?>)</span>
+                                    <?php endif; ?>
                                     <a class="tag-edit-link"
                                        href="<?php echo $request->makeUriByRequest('mid=' . $tags->mid); ?>"><i
                                             class="i-edit"></i></a>

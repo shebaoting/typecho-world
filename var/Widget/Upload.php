@@ -155,6 +155,8 @@ class Upload extends Contents implements ActionInterface
                         'size' => $this->attachment->size,
                         'bytes' => number_format(ceil($this->attachment->size / 1024)) . ' Kb',
                         'isImage' => $this->attachment->isImage,
+                        'alt' => $this->attachment->alt,
+                        'caption' => $this->attachment->caption,
                         'url' => $this->attachment->url,
                         'permalink' => $this->permalink
                     ]]);
@@ -339,6 +341,8 @@ class Upload extends Contents implements ActionInterface
                         'size' => $this->attachment->size,
                         'bytes' => number_format(ceil($this->attachment->size / 1024)) . ' Kb',
                         'isImage' => $this->attachment->isImage,
+                        'alt' => $this->attachment->alt,
+                        'caption' => $this->attachment->caption,
                         'url' => $this->attachment->url,
                         'permalink' => $this->permalink
                     ]]);

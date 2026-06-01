@@ -13,7 +13,10 @@ include 'menu.php';
             <div class="col-mb-12 col-tb-8" role="main">
                 <?php if ($attachment->attachment->isImage): ?>
                     <p><img src="<?php $attachment->attachment->url(); ?>"
-                            alt="<?php $attachment->attachment->name(); ?>" class="typecho-attachment-photo"/></p>
+                            alt="<?php echo htmlspecialchars($attachment->attachment->alt); ?>" class="typecho-attachment-photo"/></p>
+                    <?php if ($attachment->attachment->caption): ?>
+                        <p class="description"><?php echo htmlspecialchars($attachment->attachment->caption); ?></p>
+                    <?php endif; ?>
                 <?php endif; ?>
 
                 <p>

@@ -116,64 +116,145 @@ $post = \Widget\Contents\Post\Edit::alloc()->prepare();
                                   class="w-100 text"/></p>
                     </section>
 
+                    <?php
+                    $postPinned = (int) $post->getEditFieldValue('_pinned', 0);
+                    $postFeatured = (int) $post->getEditFieldValue('_featured', 0);
+                    $postSeries = (string) $post->getEditFieldValue('_series', '');
+                    ?>
+                    <section class="typecho-post-option">
+                        <label class="typecho-label"><?php _e('内容组织'); ?></label>
+                        <p>
+                            <input id="core-pinned" name="fields[int:_pinned]" type="checkbox" value="1"
+                                   <?php if ($postPinned > 0): ?>checked="true"<?php endif; ?> />
+                            <label for="core-pinned"><?php _e('置顶'); ?></label>
+                            <input id="core-featured" name="fields[int:_featured]" type="checkbox" value="1"
+                                   <?php if ($postFeatured > 0): ?>checked="true"<?php endif; ?> />
+                            <label for="core-featured"><?php _e('推荐'); ?></label>
+                        </p>
+                        <p><input id="core-series" name="fields[_series]" type="text"
+                                  value="<?php echo htmlspecialchars($postSeries); ?>" class="w-100 text"
+                                  placeholder="<?php _e('系列名称'); ?>"/></p>
+                    </section>
+
                     <?php \Typecho\Plugin::factory('admin/write-post.php')->call('option', $post); ?>
 
-                    <details id="advance-panel">
-                        <summary class="btn btn-xs"><?php _e('高级选项'); ?> <i class="i-caret-down"></i></summary>
+                    <?php
+                    $seoTitle = (string) $post->getEditFieldValue('_seo_title', '');
+                    $seoDescription = (string) $post->getEditFieldValue('_seo_description', '');
+                    $ogImage = (string) $post->getEditFieldValue('_og_image', '');
+                    ?>
+                    <div class="typecho-post-option post-option-panels">
+                        <div class="post-option-panel-actions">
+                            <button type="button" class="btn btn-xs post-option-toggle"
+                                    data-panel="#advance-panel" aria-controls="advance-panel" aria-expanded="false">
+                                <?php _e('高级选项'); ?> <i class="i-caret-down"></i>
+                            </button>
+                            <button type="button" class="btn btn-xs post-option-toggle"
+                                    data-panel="#seo-panel" aria-controls="seo-panel" aria-expanded="false">
+                                <?php _e('SEO'); ?> <i class="i-caret-down"></i>
+                            </button>
+                        </div>
 
-                        <?php if ($user->pass('editor', true)): ?>
-                            <section class="typecho-post-option visibility-option">
-                                <label for="visibility" class="typecho-label"><?php _e('公开度'); ?></label>
+                        <div id="advance-panel" class="post-option-panel-content hidden">
+
+                            <?php if ($user->pass('editor', true)): ?>
+                                <section class="typecho-post-option visibility-option">
+                                    <label for="visibility" class="typecho-label"><?php _e('公开度'); ?></label>
+                                    <p>
+                                        <select id="visibility" name="visibility">
+                                            <?php if ($user->pass('editor', true)): ?>
+                                                <option
+                                                    value="publish"<?php if (($post->status == 'publish' && !$post->password) || !$post->status): ?> selected<?php endif; ?>><?php _e('公开'); ?></option>
+                                                <option
+                                                    value="hidden"<?php if ($post->status == 'hidden'): ?> selected<?php endif; ?>><?php _e('隐藏'); ?></option>
+                                                <option
+                                                    value="password"<?php if (strlen($post->password ?? '') > 0): ?> selected<?php endif; ?>><?php _e('密码保护'); ?></option>
+                                                <option
+                                                    value="private"<?php if ($post->status == 'private'): ?> selected<?php endif; ?>><?php _e('私密'); ?></option>
+                                            <?php endif; ?>
+                                            <option
+                                                value="waiting"<?php if (!$user->pass('editor', true) || $post->status == 'waiting'): ?> selected<?php endif; ?>><?php _e('待审核'); ?></option>
+                                        </select>
+                                    </p>
+                                    <p id="post-password"<?php if (strlen($post->password ?? '') == 0): ?> class="hidden"<?php endif; ?>>
+                                        <label for="protect-pwd" class="sr-only">内容密码</label>
+                                        <input type="text" name="password" id="protect-pwd" class="text-s"
+                                               value="<?php $post->password(); ?>" size="16"
+                                               placeholder="<?php _e('内容密码'); ?>" autocomplete="off"/>
+                                    </p>
+                                </section>
+                            <?php endif; ?>
+
+                            <section class="typecho-post-option allow-option">
+                                <label class="typecho-label"><?php _e('权限控制'); ?></label>
+                                <ul>
+                                    <li><input id="allowComment" name="allowComment" type="checkbox" value="1"
+                                               <?php if ($post->allow('comment')): ?>checked="true"<?php endif; ?> />
+                                        <label for="allowComment"><?php _e('允许评论'); ?></label></li>
+                                    <li><input id="allowPing" name="allowPing" type="checkbox" value="1"
+                                               <?php if ($post->allow('ping')): ?>checked="true"<?php endif; ?> />
+                                        <label for="allowPing"><?php _e('允许被引用'); ?></label></li>
+                                    <li><input id="allowFeed" name="allowFeed" type="checkbox" value="1"
+                                               <?php if ($post->allow('feed')): ?>checked="true"<?php endif; ?> />
+                                        <label for="allowFeed"><?php _e('允许在聚合中出现'); ?></label></li>
+                                </ul>
+                            </section>
+
+                            <section class="typecho-post-option">
+                                <label for="trackback" class="typecho-label"><?php _e('引用通告'); ?></label>
+                                <p><textarea id="trackback" class="w-100 mono" name="trackback" rows="2"></textarea></p>
+                                <p class="description"><?php _e('每一行一个引用地址, 用回车隔开'); ?></p>
+                            </section>
+
+                            <?php \Typecho\Plugin::factory('admin/write-post.php')->call('advanceOption', $post); ?>
+                        </div><!-- end #advance-panel -->
+
+                        <div id="seo-panel" class="post-option-panel-content hidden">
+                            <section class="typecho-post-option seo-option">
                                 <p>
-                                    <select id="visibility" name="visibility">
-                                        <?php if ($user->pass('editor', true)): ?>
-                                            <option
-                                                value="publish"<?php if (($post->status == 'publish' && !$post->password) || !$post->status): ?> selected<?php endif; ?>><?php _e('公开'); ?></option>
-                                            <option
-                                                value="hidden"<?php if ($post->status == 'hidden'): ?> selected<?php endif; ?>><?php _e('隐藏'); ?></option>
-                                            <option
-                                                value="password"<?php if (strlen($post->password ?? '') > 0): ?> selected<?php endif; ?>><?php _e('密码保护'); ?></option>
-                                            <option
-                                                value="private"<?php if ($post->status == 'private'): ?> selected<?php endif; ?>><?php _e('私密'); ?></option>
-                                        <?php endif; ?>
-                                        <option
-                                            value="waiting"<?php if (!$user->pass('editor', true) || $post->status == 'waiting'): ?> selected<?php endif; ?>><?php _e('待审核'); ?></option>
-                                    </select>
+                                    <label for="seo-title" class="sr-only"><?php _e('SEO 标题'); ?></label>
+                                    <input id="seo-title" name="fields[_seo_title]" type="text"
+                                           value="<?php echo htmlspecialchars($seoTitle); ?>" class="w-100 text"
+                                           placeholder="<?php _e('SEO 标题'); ?>"/>
                                 </p>
-                                <p id="post-password"<?php if (strlen($post->password ?? '') == 0): ?> class="hidden"<?php endif; ?>>
-                                    <label for="protect-pwd" class="sr-only">内容密码</label>
-                                    <input type="text" name="password" id="protect-pwd" class="text-s"
-                                           value="<?php $post->password(); ?>" size="16"
-                                           placeholder="<?php _e('内容密码'); ?>" autocomplete="off"/>
+                                <p>
+                                    <label for="seo-description" class="sr-only"><?php _e('SEO 描述'); ?></label>
+                                    <textarea id="seo-description" name="fields[_seo_description]" class="w-100"
+                                              rows="3" placeholder="<?php _e('SEO 描述'); ?>"><?php echo htmlspecialchars($seoDescription); ?></textarea>
+                                </p>
+                                <p>
+                                    <label for="og-image" class="sr-only"><?php _e('Open Graph 图片地址'); ?></label>
+                                    <input id="og-image" name="fields[_og_image]" type="text"
+                                           value="<?php echo htmlspecialchars($ogImage); ?>" class="w-100 text"
+                                           placeholder="<?php _e('Open Graph 图片地址'); ?>"/>
                                 </p>
                             </section>
-                        <?php endif; ?>
-
-                        <section class="typecho-post-option allow-option">
-                            <label class="typecho-label"><?php _e('权限控制'); ?></label>
-                            <ul>
-                                <li><input id="allowComment" name="allowComment" type="checkbox" value="1"
-                                           <?php if ($post->allow('comment')): ?>checked="true"<?php endif; ?> />
-                                    <label for="allowComment"><?php _e('允许评论'); ?></label></li>
-                                <li><input id="allowPing" name="allowPing" type="checkbox" value="1"
-                                           <?php if ($post->allow('ping')): ?>checked="true"<?php endif; ?> />
-                                    <label for="allowPing"><?php _e('允许被引用'); ?></label></li>
-                                <li><input id="allowFeed" name="allowFeed" type="checkbox" value="1"
-                                           <?php if ($post->allow('feed')): ?>checked="true"<?php endif; ?> />
-                                    <label for="allowFeed"><?php _e('允许在聚合中出现'); ?></label></li>
-                            </ul>
-                        </section>
-
-                        <section class="typecho-post-option">
-                            <label for="trackback" class="typecho-label"><?php _e('引用通告'); ?></label>
-                            <p><textarea id="trackback" class="w-100 mono" name="trackback" rows="2"></textarea></p>
-                            <p class="description"><?php _e('每一行一个引用地址, 用回车隔开'); ?></p>
-                        </section>
-
-                        <?php \Typecho\Plugin::factory('admin/write-post.php')->call('advanceOption', $post); ?>
-                    </details><!-- end #advance-panel -->
+                        </div><!-- end #seo-panel -->
+                    </div>
 
                     <?php if ($post->have()): ?>
+                        <?php $historyItems = $post->getHistoryItems(); ?>
+                        <?php if (!empty($historyItems)): ?>
+                            <section class="typecho-post-option revision-history">
+                                <label class="typecho-label"><?php _e('修订历史'); ?></label>
+                                <ul>
+                                    <?php foreach ($historyItems as $history): ?>
+                                        <?php
+                                        $historyDate = new \Typecho\Date($history['modified']);
+                                        $historyLabel = match ($history['type']) {
+                                            'revision' => _t('当前修订'),
+                                            'history'  => _t('发布历史'),
+                                            default    => _t('草稿快照'),
+                                        };
+                                        ?>
+                                        <li>
+                                            <span><?php echo $historyLabel; ?> · <?php echo $historyDate->word(); ?></span>
+                                            <a href="<?php echo $security->getIndex('/action/contents-post-edit?do=rollback&cid=' . $post->cid . '&history=' . $history['cid']); ?>"><?php _e('回滚'); ?></a>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </section>
+                        <?php endif; ?>
                         <?php $modified = new \Typecho\Date($post->modified); ?>
                         <section class="typecho-post-option">
                             <p class="description">

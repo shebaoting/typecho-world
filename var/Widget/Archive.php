@@ -12,6 +12,7 @@ use Typecho\Widget\Exception as WidgetException;
 use Typecho\Widget\Helper\PageNavigator\Classic;
 use Typecho\Widget\Helper\PageNavigator\Box;
 use Widget\Base\Contents;
+use Widget\Base\Metas as BaseMetas;
 use Widget\Comments\Ping;
 use Widget\Contents\Attachment\Related as AttachmentRelated;
 use Widget\Contents\Related\Author as AuthorRelated;
@@ -47,6 +48,13 @@ class Archive extends Contents
      * @var string
      */
     private string $themeDir;
+
+    /**
+     * 正在预览的风格目录
+     *
+     * @var string|null
+     */
+    private ?string $themePreview = null;
 
     /**
      * 分页计算对象
@@ -199,6 +207,10 @@ class Archive extends Contents
         /** 用于判断是否为feed调用 */
         if ($parameter->isFeed) {
             $this->invokeByFeed = true;
+        }
+
+        if (!$this->invokeFromOutside) {
+            $this->applyThemePreview();
         }
 
         /** 初始化皮肤路径 */
@@ -526,6 +538,29 @@ class Archive extends Contents
     }
 
     /**
+     * 应用临时主题预览
+     *
+     * @return void
+     */
+    private function applyThemePreview()
+    {
+        $theme = trim((string) $this->request->filter('slug')->get('themePreview'), './');
+
+        if (
+            '' === $theme
+            || $theme === $this->options->theme
+            || !$this->user->pass('administrator', true)
+            || !is_dir($this->options->themeFile($theme))
+        ) {
+            return;
+        }
+
+        $this->themePreview = $theme;
+        $this->options->theme = $theme;
+        $this->options->themeUrl = $this->options->themeUrl(null, $theme);
+    }
+
+    /**
      * 执行函数
      */
     public function execute()
@@ -685,6 +720,8 @@ class Archive extends Contents
         /** 仅输出文章 */
         $this->countSql = clone $select;
 
+        $this->applyPinnedOrder($select);
+
         $select->order('table.contents.created', Db::SORT_DESC)
             ->page($this->currentPage, $this->parameter->pageSize);
         $this->query($select);
@@ -693,6 +730,26 @@ class Archive extends Contents
         if ($this->currentPage > 1 && !$this->have()) {
             throw new WidgetException(_t('请求的地址不存在'), 404);
         }
+    }
+
+    /**
+     * 首页归档优先展示置顶文章
+     *
+     * @param Query $select
+     */
+    private function applyPinnedOrder(Query $select)
+    {
+        if ($this->invokeByFeed || !in_array($this->archiveType, ['index', 'front'], true)) {
+            return;
+        }
+
+        $select
+            ->join(
+                'table.fields post_pinned',
+                "table.contents.cid = post_pinned.cid AND post_pinned.name = '_pinned'",
+                Db::LEFT_JOIN
+            )
+            ->order('post_pinned.int_value', Db::SORT_DESC);
     }
 
     /**
@@ -956,6 +1013,175 @@ class Archive extends Contents
     }
 
     /**
+     * 获取 SEO 标题
+     *
+     * @param string $split
+     * @return string
+     */
+    public function getSeoTitle(string $split = ' - '): string
+    {
+        $title = trim((string) ($this->archiveTitle ?? ''));
+
+        if ('' === $title || $title === $this->options->title) {
+            return $this->options->title;
+        }
+
+        return $title . $split . $this->options->title;
+    }
+
+    /**
+     * 输出 SEO 标题
+     *
+     * @param string $split
+     * @return void
+     */
+    public function seoTitle(string $split = ' - ')
+    {
+        echo htmlspecialchars($this->getSeoTitle($split));
+    }
+
+    /**
+     * 获取规范链接
+     *
+     * @return string|null
+     */
+    public function getCanonicalUrl(): ?string
+    {
+        if ($this->is('single') || $this->makeSinglePageAsFrontPage) {
+            return $this->archiveUrl;
+        }
+
+        if ($this->is('index') && $this->currentPage <= 1) {
+            return $this->options->siteUrl;
+        }
+
+        if ($this->currentPage > 1) {
+            $pageRow = new class ($this->currentPage, $this->pageRow) implements Router\ParamsDelegateInterface {
+                private int $currentPage;
+                private Router\ParamsDelegateInterface $pageRow;
+
+                public function __construct(int $currentPage, Router\ParamsDelegateInterface $pageRow)
+                {
+                    $this->currentPage = $currentPage;
+                    $this->pageRow = $pageRow;
+                }
+
+                public function getRouterParam(string $key): string
+                {
+                    return 'page' === $key ? (string) $this->currentPage : $this->pageRow->getRouterParam($key);
+                }
+            };
+
+            return Router::url(
+                $this->parameter->type . (false === strpos($this->parameter->type, '_page') ? '_page' : null),
+                $pageRow,
+                $this->options->index
+            );
+        }
+
+        return $this->archiveUrl;
+    }
+
+    /**
+     * 获取 Open Graph 图片
+     *
+     * @return string|null
+     */
+    public function getOpenGraphImage(): ?string
+    {
+        if ($this->is('single') && !$this->hidden) {
+            $image = trim((string) ($this->fields->_og_image ?? ''));
+
+            if ('' !== $image) {
+                return $this->normalizeUrl($image);
+            }
+
+            if (preg_match('/<img[^>]+src=["\']([^"\']+)["\']/i', $this->content, $matches)) {
+                return $this->normalizeUrl($matches[1]);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 规范化 URL
+     *
+     * @param string $url
+     * @return string
+     */
+    private function normalizeUrl(string $url): string
+    {
+        if (preg_match('/^(https?:)?\/\//i', $url)) {
+            return $url;
+        }
+
+        return Common::url($url, $this->options->siteUrl);
+    }
+
+    /**
+     * 获取导航项
+     *
+     * @return array
+     */
+    public function getNavigationItems(): array
+    {
+        $items = json_decode((string) ($this->options->navigation ?? ''), true);
+        $items = is_array($items) ? $items : [];
+
+        if (empty($items)) {
+            $items[] = ['label' => _t('首页'), 'url' => '/', 'target' => ''];
+
+            $pages = PageRows::allocWithAlias('navigation');
+            while ($pages->next()) {
+                $items[] = ['label' => $pages->title, 'url' => $pages->permalink, 'target' => ''];
+            }
+        }
+
+        return array_values(array_filter(array_map(function ($item) {
+            $label = trim((string) ($item['label'] ?? ''));
+            $url = trim((string) ($item['url'] ?? ''));
+
+            if ('' === $label || '' === $url) {
+                return null;
+            }
+
+            return [
+                'label'  => $label,
+                'url'    => $this->normalizeUrl($url),
+                'target' => '_blank' === ($item['target'] ?? '') ? '_blank' : '',
+            ];
+        }, $items)));
+    }
+
+    /**
+     * 输出导航菜单
+     *
+     * @param string $format
+     * @param string $currentClass
+     * @return void
+     */
+    public function navMenu(
+        string $format = '<a href="{url}"{class}{target}>{label}</a>',
+        string $currentClass = 'current'
+    ) {
+        $currentUrl = rtrim($this->getCanonicalUrl() ?? $this->request->getRequestUrl(), '/');
+
+        foreach ($this->getNavigationItems() as $item) {
+            $url = rtrim($item['url'], '/');
+            $class = $url === $currentUrl ? ' class="' . $currentClass . '"' : '';
+            $target = '_blank' === $item['target'] ? ' target="_blank" rel="noopener"' : '';
+
+            echo strtr($format, [
+                '{url}'    => htmlspecialchars($item['url']),
+                '{label}'  => htmlspecialchars($item['label']),
+                '{class}'  => $class,
+                '{target}' => $target,
+            ]);
+        }
+    }
+
+    /**
      * 获取关联内容组件
      *
      * @param integer $limit 输出数量
@@ -989,6 +1215,7 @@ class Archive extends Contents
     {
         $rules = [];
         $allows = [
+            'canonical'    => 1,
             'description'  => htmlspecialchars($this->archiveDescription ?? ''),
             'keywords'     => htmlspecialchars($this->archiveKeywords ?? ''),
             'generator'    => $this->options->generator,
@@ -1013,9 +1240,11 @@ class Archive extends Contents
         }
 
         $allows = self::pluginHandle()->filter('headerOptions', $allows, $this);
-        $title = (empty($this->archiveTitle) ? '' : $this->archiveTitle . ' &raquo; ') . $this->options->title;
+        $title = $this->getSeoTitle(' &raquo; ');
+        $canonicalUrl = $this->getCanonicalUrl();
 
-        $header = ($this->is('single') && !$this->is('index')) ? '<link rel="canonical" href="' . $this->archiveUrl . '" />' . "\n" : '';
+        $header = (!empty($allows['canonical']) && $canonicalUrl)
+            ? '<link rel="canonical" href="' . htmlspecialchars($canonicalUrl) . '" />' . "\n" : '';
 
         if (!empty($allows['pingback']) && 2 == $this->options->allowXmlRpc) {
             $header .= '<link rel="pingback" href="' . $allows['pingback'] . '" />' . "\n";
@@ -1063,15 +1292,22 @@ class Archive extends Contents
         }
 
         if (!empty($allows['social'])) {
+            $ogImage = $this->getOpenGraphImage();
+
             $header .= '<meta property="og:type" content="' . ($this->is('single') ? 'article' : 'website') . '" />' . "\n";
-            $header .= '<meta property="og:url" content="' . $this->archiveUrl . '" />' . "\n";
+            $header .= '<meta property="og:url" content="' . htmlspecialchars($canonicalUrl ?? $this->archiveUrl ?? $this->options->siteUrl) . '" />' . "\n";
             $header .= '<meta name="twitter:title" property="og:title" itemprop="name" content="'
-                . htmlspecialchars($this->archiveTitle ?? $this->options->title) . '" />' . "\n";
+                . htmlspecialchars($title) . '" />' . "\n";
             $header .= '<meta name="twitter:description" property="og:description" itemprop="description" content="'
                 . htmlspecialchars($this->archiveDescription ?? ($this->options->description ?? '')) . '" />' . "\n";
             $header .= '<meta property="og:site_name" content="' . htmlspecialchars($this->options->title) . '" />' . "\n";
             $header .= '<meta name="twitter:card" content="summary" />' . "\n";
             $header .= '<meta name="twitter:domain" content="' . $this->options->siteDomain . '" />' . "\n";
+
+            if ($ogImage) {
+                $header .= '<meta property="og:image" content="' . htmlspecialchars($ogImage) . '" />' . "\n";
+                $header .= '<meta name="twitter:image" content="' . htmlspecialchars($ogImage) . '" />' . "\n";
+            }
         }
 
         if ($this->options->commentsThreaded && $this->is('single')) {
@@ -1703,6 +1939,16 @@ EOF;
 
             /** 设置描述 */
             $this->archiveDescription = $this->plainExcerpt;
+
+            $seoTitle = trim((string) ($this->fields->_seo_title ?? ''));
+            if ('' !== $seoTitle) {
+                $this->archiveTitle = $seoTitle;
+            }
+
+            $seoDescription = trim((string) ($this->fields->_seo_description ?? ''));
+            if ('' !== $seoDescription) {
+                $this->archiveDescription = $seoDescription;
+            }
         }
 
         /** 设置归档类型 */
@@ -1834,6 +2080,7 @@ EOF;
             ->where('type = ?', 'tag')->limit(1);
 
         $alias = 'tag';
+        $slug = null;
 
         if ($this->request->is('mid')) {
             $mid = $this->request->filter('int')->get('mid');
@@ -1851,6 +2098,16 @@ EOF;
         $tag = MetasFrom::allocWithAlias($alias, [
             'query' => $tagSelect
         ]);
+
+        if (!$tag->have() && $slug) {
+            $aliasTag = BaseMetas::alloc()->findTag($slug);
+
+            if ($aliasTag) {
+                $tag = MetasFrom::allocWithAlias('tag:' . $aliasTag['mid'], [
+                    'mid' => $aliasTag['mid']
+                ]);
+            }
+        }
 
         if (!$tag->have()) {
             throw new WidgetException(_t('标签不存在'), 404);

@@ -58,6 +58,8 @@ CREATE INDEX "typecho_contents_created" ON "typecho_contents" ("created");
 CREATE INDEX "typecho_contents_type_status_created" ON "typecho_contents" ("type", "status", "created");
 CREATE INDEX "typecho_contents_author_status_created" ON "typecho_contents" ("authorId", "status", "created");
 CREATE INDEX "typecho_contents_parent_type" ON "typecho_contents" ("parent", "type");
+CREATE INDEX "typecho_contents_parent_type_modified" ON "typecho_contents" ("parent", "type", "modified");
+CREATE INDEX "typecho_contents_type_status_modified" ON "typecho_contents" ("type", "status", "modified");
 
 --
 -- Table structure for table "typecho_fields"
@@ -74,6 +76,8 @@ CREATE TABLE "typecho_fields" ("cid" INT NOT NULL,
 
 CREATE INDEX "typecho_fields_int_value" ON "typecho_fields" ("int_value");
 CREATE INDEX "typecho_fields_float_value" ON "typecho_fields" ("float_value");
+CREATE INDEX "typecho_fields_name" ON "typecho_fields" ("name");
+CREATE INDEX "typecho_fields_name_int_value" ON "typecho_fields" ("name", "int_value");
 
 --
 -- Table structure for table "typecho_metas"
@@ -86,6 +90,7 @@ CREATE TABLE "typecho_metas" (  "mid" INT NOT NULL DEFAULT nextval('typecho_meta
   "slug" VARCHAR(150) NULL DEFAULT NULL,
   "type" VARCHAR(16) NOT NULL DEFAULT '',
   "description" VARCHAR(150) NULL DEFAULT NULL,
+  "aliases" TEXT NULL DEFAULT NULL,
   "count" INT NULL DEFAULT '0',
   "order" INT NULL DEFAULT '0',
   "parent" INT NULL DEFAULT '0',
@@ -130,6 +135,28 @@ CREATE TABLE "typecho_migrations" (  "name" VARCHAR(128) NOT NULL,
   "executed" INT NOT NULL DEFAULT '0',
   PRIMARY KEY ("name")
 );
+
+--
+-- Table structure for table "typecho_logs"
+--
+
+CREATE SEQUENCE "typecho_logs_seq";
+
+CREATE TABLE "typecho_logs" (  "lid" INT NOT NULL DEFAULT nextval('typecho_logs_seq'),
+  "created" INT NULL DEFAULT '0',
+  "userId" INT NULL DEFAULT '0',
+  "action" VARCHAR(32) NULL DEFAULT NULL,
+  "targetType" VARCHAR(32) NULL DEFAULT NULL,
+  "targetId" INT NULL DEFAULT '0',
+  "targetTitle" VARCHAR(150) NULL DEFAULT NULL,
+  "message" TEXT NULL DEFAULT NULL,
+  "ip" VARCHAR(64) NULL DEFAULT NULL,
+  PRIMARY KEY ("lid")
+);
+
+CREATE INDEX "typecho_logs_created" ON "typecho_logs" ("created");
+CREATE INDEX "typecho_logs_user_created" ON "typecho_logs" ("userId", "created");
+CREATE INDEX "typecho_logs_target" ON "typecho_logs" ("targetType", "targetId");
 
 --
 -- Table structure for table "typecho_users"
