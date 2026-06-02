@@ -21,6 +21,8 @@ class Repository
 
     private const CACHE_TTL = 600;
 
+    private const CACHE_VERSION = 3;
+
     private static bool $offline = false;
 
     private static string $offlineMessage = '';
@@ -46,7 +48,7 @@ class Repository
             self::saveCache([
                 'time' => time(),
                 'source' => self::INDEX_URL,
-                'version' => 2,
+                'version' => self::CACHE_VERSION,
                 'apps' => $apps,
             ]);
 
@@ -123,7 +125,7 @@ class Repository
         return !empty($cache['apps'])
             && !empty($cache['time'])
             && ($cache['source'] ?? '') === self::INDEX_URL
-            && (int) ($cache['version'] ?? 0) >= 2
+            && (int) ($cache['version'] ?? 0) >= self::CACHE_VERSION
             && time() - (int) $cache['time'] < self::CACHE_TTL;
     }
 

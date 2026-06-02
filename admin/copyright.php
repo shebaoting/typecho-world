@@ -1,8 +1,7 @@
 <?php if(!defined('__TYPECHO_ADMIN__')) exit; ?>
 <footer class="typecho-foot" role="contentinfo">
     <div class="copyright">
-        <a href="https://typecho.world" class="typecho-world-footmark">Typecho World</a>
-        <p><?php _e('由 <a href="https://typecho.world">Typecho World</a> 驱动，基于 <a href="https://typecho.org">Typecho</a> 继续维护，遵循 <a href="https://www.gnu.org/licenses/old-licenses/gpl-2.0.html">GPL-2.0</a> 协议，版本 %s', $options->version); ?></p>
+        <p><?php _e('由 <a href="https://typecho.world">Typecho World</a> 驱动，基于 <a href="https://typecho.org">Typecho</a> 继续维护，版本 %s', $options->version); ?></p>
     </div>
     <nav class="resource">
         <a href="https://typecho.world/docs/"><?php _e('帮助文档'); ?></a> &bull;

@@ -68,6 +68,20 @@ class Market
         $state = self::state();
         $options = Options::alloc();
         $latestTag = self::latestTag($app);
+        $package = trim((string) ($app['package'] ?? $app['downloadUrl'] ?? ''));
+        if ('' === $package && !empty($latestTag['downloadUrl'])) {
+            $package = trim((string) $latestTag['downloadUrl']);
+        }
+
+        if ('' !== $package) {
+            $app['package'] = $package;
+            $app['downloadUrl'] = $package;
+        }
+
+        if (empty($app['tags']) && $latestTag) {
+            $app['tags'] = [$latestTag];
+        }
+
         $local = self::localInfo($app, $state, $options);
         $installedVersion = $local['version'] ?: ($app['localVersion'] ?? '');
         $latestVersion = $latestTag['name'] ?? '';
@@ -80,6 +94,8 @@ class Market
 
         return array_merge($app, [
             'listed'           => $app['listed'] ?? true,
+            'package'          => $package,
+            'downloadUrl'      => $package,
             'latestTag'        => $latestTag,
             'latestVersion'    => $latestVersion,
             'installed'        => $local['installed'],
