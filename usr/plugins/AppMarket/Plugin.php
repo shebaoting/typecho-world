@@ -19,7 +19,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) {
  *
  * @package 应用市场
  * @author Typecho World
- * @version 1.0.7
+ * @version 1.0.9
  * @since 1.3.10
  * @link https://typecho.world
  */
@@ -27,7 +27,7 @@ class Plugin implements PluginInterface
 {
     public const PANEL = 'AppMarket/panel.php';
 
-    public const VERSION = '1.0.7';
+    public const VERSION = '1.0.9';
 
     /**
      * 启用插件

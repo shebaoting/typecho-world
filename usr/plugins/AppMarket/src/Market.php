@@ -151,14 +151,17 @@ class Market
     public static function latestTag(array $app): ?array
     {
         if (!empty($app['tags'])) {
-            return $app['tags'][0];
+            $tag = $app['tags'][0];
+            if (is_array($tag)) {
+                return self::normalizeTag($tag, $app);
+            }
         }
 
         if (!empty($app['latestTag']) && is_array($app['latestTag'])) {
-            return $app['latestTag'];
+            return self::normalizeTag($app['latestTag'], $app);
         }
 
-        $version = trim((string) ($app['latestVersion'] ?? ''));
+        $version = self::versionText($app['latestVersion'] ?? '');
         $downloadUrl = trim((string) ($app['downloadUrl'] ?? $app['package'] ?? ''));
         if ('' !== $version || '' !== $downloadUrl) {
             return [
@@ -170,6 +173,44 @@ class Market
         }
 
         return null;
+    }
+
+    /**
+     * @param array $tag
+     * @param array $app
+     * @return array
+     */
+    private static function normalizeTag(array $tag, array $app): array
+    {
+        $version = trim((string) ($tag['name'] ?? ''));
+        if ('' === $version) {
+            $version = self::versionText($app['latestVersion'] ?? '');
+        }
+
+        $downloadUrl = trim((string) ($tag['downloadUrl'] ?? ''));
+        if ('' === $downloadUrl) {
+            $downloadUrl = trim((string) ($app['downloadUrl'] ?? $app['package'] ?? ''));
+        }
+
+        return [
+            'name' => '' !== $version ? $version : _t('最新版本'),
+            'date' => (string) ($tag['date'] ?? $app['updated'] ?? ''),
+            'note' => (string) ($tag['note'] ?? ''),
+            'downloadUrl' => $downloadUrl,
+        ];
+    }
+
+    /**
+     * @param mixed $value
+     * @return string
+     */
+    private static function versionText(mixed $value): string
+    {
+        if (is_array($value)) {
+            return trim((string) ($value['name'] ?? $value['version'] ?? $value['tagName'] ?? ''));
+        }
+
+        return trim((string) $value);
     }
 
     /**

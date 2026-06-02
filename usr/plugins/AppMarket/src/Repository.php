@@ -21,7 +21,7 @@ class Repository
 
     private const CACHE_TTL = 600;
 
-    private const CACHE_VERSION = 3;
+    private const CACHE_VERSION = 5;
 
     private static bool $offline = false;
 
@@ -126,7 +126,44 @@ class Repository
             && !empty($cache['time'])
             && ($cache['source'] ?? '') === self::INDEX_URL
             && (int) ($cache['version'] ?? 0) >= self::CACHE_VERSION
+            && !self::cacheNeedsRepair($cache['apps'])
             && time() - (int) $cache['time'] < self::CACHE_TTL;
+    }
+
+    /**
+     * @param mixed $apps
+     * @return bool
+     */
+    private static function cacheNeedsRepair(mixed $apps): bool
+    {
+        if (!is_array($apps)) {
+            return true;
+        }
+
+        foreach ($apps as $app) {
+            if (!is_array($app)) {
+                return true;
+            }
+
+            $tag = is_array($app['tags'] ?? null) ? ($app['tags'][0] ?? null) : null;
+            $latestTag = is_array($app['latestTag'] ?? null) ? $app['latestTag'] : null;
+            $hasVersion = '' !== self::versionName(
+                $tag['name'] ?? $latestTag['name'] ?? $app['latestVersion'] ?? ''
+            );
+            $hasPackage = '' !== trim((string) (
+                $tag['downloadUrl']
+                ?? $latestTag['downloadUrl']
+                ?? $app['package']
+                ?? $app['downloadUrl']
+                ?? ''
+            ));
+
+            if (!$hasVersion || !$hasPackage) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -234,10 +271,10 @@ class Repository
         $coverUrl = (string) ($item['coverUrl'] ?? $manifest['screenshot'] ?? '');
         $name = (string) ($item['name'] ?? $manifest['name'] ?? $repoName);
         $description = (string) ($item['description'] ?? $manifest['description'] ?? '');
-        $tags = self::tags($item);
+        $tags = self::tags($item, $repoOwner, $repoName);
         $latestTag = $tags[0] ?? null;
-        $latestVersion = trim((string) ($latestTag['name'] ?? $item['latestVersion'] ?? ''));
-        $downloadUrl = self::downloadUrl($item, $latestTag);
+        $latestVersion = self::versionName($latestTag['name'] ?? $item['latestVersion'] ?? '');
+        $downloadUrl = self::downloadUrl($item, $latestTag, $repoOwner, $repoName);
 
         return [
             'id' => (string) ($item['id'] ?? sprintf('%s/%s', $repoOwner, $repoName)),
@@ -342,7 +379,7 @@ class Repository
      * @param array|null $latestTag
      * @return string
      */
-    private static function downloadUrl(array $item, ?array $latestTag): string
+    private static function downloadUrl(array $item, ?array $latestTag, string $repoOwner, string $repoName): string
     {
         $packageUrl = (string) (
             $latestTag['downloadUrl']
@@ -355,6 +392,16 @@ class Repository
             return $packageUrl;
         }
 
+        $tagName = self::versionName($latestTag['name'] ?? $item['latestVersion'] ?? '');
+        if ('' !== $tagName && '' !== $repoOwner && '' !== $repoName) {
+            return sprintf(
+                'https://codeload.github.com/%s/%s/zip/refs/tags/%s',
+                rawurlencode($repoOwner),
+                rawurlencode($repoName),
+                str_replace('%2F', '/', rawurlencode($tagName))
+            );
+        }
+
         return '';
     }
 
@@ -362,7 +409,7 @@ class Repository
      * @param array $item
      * @return array
      */
-    private static function tags(array $item): array
+    private static function tags(array $item, string $repoOwner = '', string $repoName = ''): array
     {
         $tags = [];
         foreach (($item['tags'] ?? []) as $tag) {
@@ -370,36 +417,65 @@ class Repository
                 continue;
             }
 
-            $name = trim((string) ($tag['name'] ?? ''));
+            $name = self::versionName($tag['name'] ?? '');
             if ('' === $name) {
                 continue;
+            }
+
+            $downloadUrl = (string) ($tag['downloadUrl'] ?? '');
+            if ('' === trim($downloadUrl) && '' !== $repoOwner && '' !== $repoName) {
+                $downloadUrl = sprintf(
+                    'https://codeload.github.com/%s/%s/zip/refs/tags/%s',
+                    rawurlencode($repoOwner),
+                    rawurlencode($repoName),
+                    str_replace('%2F', '/', rawurlencode($name))
+                );
             }
 
             $tags[] = [
                 'name' => $name,
                 'date' => self::dateOnly((string) ($tag['date'] ?? '')),
                 'note' => (string) ($tag['note'] ?? ''),
-                'downloadUrl' => (string) ($tag['downloadUrl'] ?? ''),
+                'downloadUrl' => $downloadUrl,
             ];
         }
 
         if (empty($tags) && !empty($item['latestTag']) && is_array($item['latestTag'])) {
             $tag = $item['latestTag'];
-            $name = trim((string) ($tag['name'] ?? $item['latestVersion'] ?? ''));
+            $name = self::versionName($tag['name'] ?? $item['latestVersion'] ?? '');
             if ('' !== $name) {
+                $downloadUrl = (string) ($tag['downloadUrl'] ?? $item['package'] ?? $item['downloadUrl'] ?? '');
+                if ('' === trim($downloadUrl) && '' !== $repoOwner && '' !== $repoName) {
+                    $downloadUrl = sprintf(
+                        'https://codeload.github.com/%s/%s/zip/refs/tags/%s',
+                        rawurlencode($repoOwner),
+                        rawurlencode($repoName),
+                        str_replace('%2F', '/', rawurlencode($name))
+                    );
+                }
+
                 $tags[] = [
                     'name' => $name,
                     'date' => self::dateOnly((string) ($tag['date'] ?? '')),
                     'note' => (string) ($tag['note'] ?? ''),
-                    'downloadUrl' => (string) ($tag['downloadUrl'] ?? $item['package'] ?? $item['downloadUrl'] ?? ''),
+                    'downloadUrl' => $downloadUrl,
                 ];
             }
         }
 
         if (empty($tags)) {
-            $name = trim((string) ($item['latestVersion'] ?? ''));
+            $name = self::versionName($item['latestVersion'] ?? '');
             $downloadUrl = trim((string) ($item['package'] ?? $item['downloadUrl'] ?? ''));
             if ('' !== $name || '' !== $downloadUrl) {
+                if ('' === $downloadUrl && '' !== $name && '' !== $repoOwner && '' !== $repoName) {
+                    $downloadUrl = sprintf(
+                        'https://codeload.github.com/%s/%s/zip/refs/tags/%s',
+                        rawurlencode($repoOwner),
+                        rawurlencode($repoName),
+                        str_replace('%2F', '/', rawurlencode($name))
+                    );
+                }
+
                 $tags[] = [
                     'name' => '' !== $name ? $name : _t('最新版本'),
                     'date' => self::dateOnly((string) ($item['updated'] ?? $item['syncedAt'] ?? '')),
@@ -410,6 +486,19 @@ class Repository
         }
 
         return $tags;
+    }
+
+    /**
+     * @param mixed $value
+     * @return string
+     */
+    private static function versionName(mixed $value): string
+    {
+        if (is_array($value)) {
+            return trim((string) ($value['name'] ?? $value['tagName'] ?? $value['version'] ?? ''));
+        }
+
+        return trim((string) $value);
     }
 
     /**
