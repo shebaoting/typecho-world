@@ -96,7 +96,7 @@ class Menu extends Base
                 [[Files::class, 'getMenuTitle'], [Files::class, 'getMenuTitle'], 'theme-editor.php', 'administrator', true],
                 [_t('设置外观'), _t('设置外观'), 'options-theme.php', 'administrator', true],
                 [_t('备份'), _t('备份'), 'backup.php', 'administrator'],
-                [_t('升级'), _t('升级程序'), 'upgrade.php', 'administrator', true],
+                [_t('升级'), _t('升级程序'), 'upgrade.php', 'administrator'],
                 [_t('欢迎'), _t('欢迎使用'), 'welcome.php', 'subscriber', true]
             ],
             [

@@ -500,6 +500,91 @@ class Plugin
     }
 
     /**
+     * 从插件入口文件中识别真实插件类
+     *
+     * @param string $pluginFile
+     * @return string|null
+     */
+    private static function detectPluginClass(string $pluginFile): ?string
+    {
+        $tokens = token_get_all(file_get_contents($pluginFile));
+        $namespace = '';
+        $firstClass = null;
+        $namespaceTokenTypes = [T_STRING, T_NS_SEPARATOR];
+
+        if (defined('T_NAME_QUALIFIED')) {
+            $namespaceTokenTypes[] = T_NAME_QUALIFIED;
+        }
+
+        if (defined('T_NAME_FULLY_QUALIFIED')) {
+            $namespaceTokenTypes[] = T_NAME_FULLY_QUALIFIED;
+        }
+
+        if (defined('T_NAME_RELATIVE')) {
+            $namespaceTokenTypes[] = T_NAME_RELATIVE;
+        }
+
+        foreach ($tokens as $index => $token) {
+            if (!is_array($token)) {
+                continue;
+            }
+
+            if (T_NAMESPACE == $token[0]) {
+                $namespace = '';
+                for ($cursor = $index + 1, $count = count($tokens); $cursor < $count; $cursor++) {
+                    $part = $tokens[$cursor];
+                    if (';' === $part || '{' === $part) {
+                        break;
+                    }
+
+                    if (is_array($part) && in_array($part[0], $namespaceTokenTypes, true)) {
+                        $namespace .= $part[1];
+                    } elseif ('\\' === $part) {
+                        $namespace .= '\\';
+                    }
+                }
+                continue;
+            }
+
+            if (T_CLASS != $token[0]) {
+                continue;
+            }
+
+            $previous = null;
+            for ($cursor = $index - 1; $cursor >= 0; $cursor--) {
+                $part = $tokens[$cursor];
+                if (is_array($part) && in_array($part[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                    continue;
+                }
+
+                $previous = $part;
+                break;
+            }
+
+            if (is_array($previous) && T_NEW == $previous[0]) {
+                continue;
+            }
+
+            for ($cursor = $index + 1, $count = count($tokens); $cursor < $count; $cursor++) {
+                $part = $tokens[$cursor];
+                if (is_array($part) && T_STRING == $part[0]) {
+                    $className = $part[1];
+                    $fullClassName = '\\' . trim($namespace . '\\' . $className, '\\');
+
+                    if ('Plugin' === $className) {
+                        return $fullClassName;
+                    }
+
+                    $firstClass ??= $fullClassName;
+                    break;
+                }
+            }
+        }
+
+        return $firstClass;
+    }
+
+    /**
      * 获取插件路径和类名
      * 返回值为一个数组
      * 第一项为插件路径,第二项为类名
@@ -513,7 +598,8 @@ class Plugin
     {
         switch (true) {
             case file_exists($pluginFileName = $path . '/' . $pluginName . '/Plugin.php'):
-                $className = "\\" . PLUGIN_NAMESPACE . "\\{$pluginName}\\Plugin";
+                $className = self::detectPluginClass($pluginFileName)
+                    ?: "\\" . PLUGIN_NAMESPACE . "\\{$pluginName}\\Plugin";
                 break;
             case file_exists($pluginFileName = $path . '/' . $pluginName . '.php'):
                 $className = "\\" . PLUGIN_NAMESPACE . "\\" . $pluginName;

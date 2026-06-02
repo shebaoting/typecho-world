@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" role="img" aria-label="Quiet Pages preview">
+  <rect width="960" height="600" fill="#f7f7f3"/>
+  <rect x="120" y="72" width="720" height="456" fill="#fff" stroke="#e5e5dc"/>
+  <rect x="170" y="122" width="180" height="22" fill="#333"/>
+  <rect x="170" y="160" width="430" height="12" fill="#d8d8d2"/>
+  <rect x="170" y="214" width="150" height="14" fill="#3f7893"/>
+  <rect x="170" y="250" width="520" height="10" fill="#e5e5de"/>
+  <rect x="170" y="274" width="470" height="10" fill="#e5e5de"/>
+  <rect x="170" y="298" width="560" height="10" fill="#e5e5de"/>
+  <rect x="170" y="346" width="150" height="14" fill="#3f7893"/>
+  <rect x="170" y="382" width="520" height="10" fill="#e5e5de"/>
+  <rect x="170" y="406" width="450" height="10" fill="#e5e5de"/>
+  <rect x="170" y="430" width="500" height="10" fill="#e5e5de"/>
+</svg>

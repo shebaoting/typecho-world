@@ -11,7 +11,8 @@
     },
     "scripts": {
         "analyse": "phpstan analyse",
-        "lint": "find index.php install.php admin install usr var -type f -name '*.php' -print0 | xargs -0 -n1 -P4 php -l"
+        "lint": "find index.php install.php admin install usr var -type f -name '*.php' -print0 | xargs -0 -n1 -P4 php -l",
+        "release": "sh tools/release-tag.sh"
     },
     "config": {
         "allow-plugins": {}

@@ -195,8 +195,8 @@ include 'common-js.php';
             if (update.available) {
                 $('<div class="update-check message error"><p>'
                     + '<?php _e('您当前使用的版本是 %s'); ?>'.replace('%s', update.current) + '<br />'
-                    + '<strong><a href="' + update.link + '" target="_blank">'
-                    + '<?php _e('官方最新版本是 %s'); ?>'.replace('%s', update.latest) + '</a></strong></p></div>')
+                    + '<strong><a href="' + update.link + '">'
+                    + '<?php _e('Typecho World 最新版本是 %s'); ?>'.replace('%s', update.latest) + '</a></strong></p></div>')
                     .insertAfter('.typecho-page-title').effect('highlight');
             }
         }

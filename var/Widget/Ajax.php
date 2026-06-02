@@ -3,8 +3,10 @@
 namespace Widget;
 
 use Typecho\Http\Client;
+use Typecho\Common;
 use Typecho\Widget\Exception;
 use Widget\Base\Options as BaseOptions;
+use Utils\SystemUpdater;
 
 if (!defined('__TYPECHO_ROOT_DIR__')) {
     exit;
@@ -40,38 +42,14 @@ class Ajax extends BaseOptions implements ActionInterface
     public function checkVersion()
     {
         $this->user->pass('editor');
-        $client = Client::get();
         $result = ['available' => 0];
-        if ($client) {
-            $client->setHeader('User-Agent', $this->options->generator)
-                ->setTimeout(10);
 
-            try {
-                $client->send('https://typecho.org/version.json');
-
-                /** 匹配内容体 */
-                $response = $client->getResponseBody();
-                $json = json_decode($response, true);
-
-                if (!empty($json)) {
-                    $version = $this->options->version;
-
-                    if (
-                        isset($json['release'])
-                        && preg_match("/^[0-9.]+$/", $json['release'])
-                        && version_compare($json['release'], $version, '>')
-                    ) {
-                        $result = [
-                            'available' => 1,
-                            'latest'    => $json['release'],
-                            'current'   => $version,
-                            'link'      => 'https://typecho.org/download'
-                        ];
-                    }
-                }
-            } catch (\Exception $e) {
-                // do nothing
-            }
+        try {
+            $result = SystemUpdater::check();
+            $result['link'] = Common::url('upgrade.php', $this->options->adminUrl);
+            $result['downloadPage'] = 'https://typecho.world/download/';
+        } catch (\Exception $e) {
+            $result['error'] = $e->getMessage();
         }
 
         $this->response->throwJson($result);

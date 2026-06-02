@@ -27,6 +27,7 @@ class Action extends Widget
         'logout'                   => '\Widget\Logout',
         'register'                 => '\Widget\Register',
         'upgrade'                  => '\Widget\Upgrade',
+        'system-update'            => '\Widget\SystemUpdate',
         'upload'                   => '\Widget\Upload',
         'service'                  => '\Widget\Service',
         'xmlrpc'                   => '\Widget\XmlRpc',

@@ -45,8 +45,6 @@ if (!empty($currentMenu)) {
 
         if ($mustUpgrade && 'upgrade.php' != $adminFile && 'backup.php' != $adminFile) {
             $response->redirect(\Typecho\Common::url('upgrade.php', $options->adminUrl));
-        } elseif (!$mustUpgrade && 'upgrade.php' == $adminFile) {
-            $response->redirect($options->adminUrl);
         } elseif (!$mustUpgrade && 'welcome.php' == $adminFile && $user->logged) {
             $response->redirect($options->adminUrl);
         }
