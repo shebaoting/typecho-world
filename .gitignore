@@ -32,10 +32,6 @@ usr/uploads/
 usr/cache/
 usr/*.db
 usr/plugins/*
-!usr/plugins/AppMarket/
-!usr/plugins/AppMarket/**
-!usr/plugins/AppMarket/**/*.mo
-!usr/plugins/AppMarket/**/*.po
 usr/themes/*
 !usr/themes/default
 !usr/themes/classic-22
