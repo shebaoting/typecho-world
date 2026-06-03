@@ -6,6 +6,7 @@ use Typecho\Widget\Exception;
 use Typecho\Widget\Helper\Form;
 use Typecho\Widget\Helper\Form\Element\Submit;
 use Typecho\Widget\Helper\Form\Element;
+use Typecho\Theme\Manifest;
 use Widget\Base\Options as BaseOptions;
 use Widget\Options;
 
@@ -48,9 +49,15 @@ class Config extends BaseOptions
     {
         $options = Options::alloc();
         $theme = $theme ?? $options->theme;
+        $manifest = Manifest::load($theme, $options);
+
+        if (!empty($manifest->settings())) {
+            return true;
+        }
+
         $configFile = $options->themeFile($theme, 'functions.php');
 
-        if (!$options->missingTheme && file_exists($configFile)) {
+        if (file_exists($configFile)) {
             require_once $configFile;
 
             if (function_exists('themeConfig') || function_exists('themeConfigSchema')) {
@@ -104,9 +111,15 @@ class Config extends BaseOptions
     {
         $options = Options::alloc();
         $theme = $theme ?? $options->theme;
+        $manifest = Manifest::load($theme, $options);
+
+        if (!empty($manifest->settings())) {
+            return $manifest->settings();
+        }
+
         $configFile = $options->themeFile($theme, 'functions.php');
 
-        if (!$options->missingTheme && file_exists($configFile)) {
+        if (file_exists($configFile)) {
             require_once $configFile;
 
             if (function_exists('themeConfigSchema')) {
@@ -135,14 +148,20 @@ class Config extends BaseOptions
                 continue;
             }
 
-            if (($item['type'] ?? '') === 'checkbox') {
+            if (in_array(($item['type'] ?? ''), ['checkbox', 'multiselect'], true)) {
                 $element->multiMode();
             }
 
             foreach ($item['attributes'] ?? [] as $name => $value) {
                 if (is_scalar($value)) {
-                    $element->input->setAttribute((string) $name, (string) $value);
+                    foreach ($element->inputs as $input) {
+                        $input->setAttribute((string) $name, (string) $value);
+                    }
                 }
+            }
+
+            if (isset($item['showIf']) && is_array($item['showIf'])) {
+                $element->setAttribute('data-show-if', json_encode($item['showIf'], JSON_UNESCAPED_UNICODE));
             }
 
             foreach ($item['rules'] ?? [] as $rule => $message) {
@@ -169,13 +188,17 @@ class Config extends BaseOptions
         $description = $item['description'] ?? null;
 
         return match ($type) {
-            'textarea' => new Form\Element\Textarea($name, null, $value, $label, $description),
-            'select'   => new Form\Element\Select($name, $options ?? [], $value, $label, $description),
-            'radio'    => new Form\Element\Radio($name, $options ?? [], $value, $label, $description),
-            'checkbox' => new Form\Element\Checkbox($name, $options ?? [], $value, $label, $description),
-            'number'   => new Form\Element\Number($name, null, $value, $label, $description),
-            'url'      => new Form\Element\Url($name, null, $value, $label, $description),
-            default    => new Form\Element\Text($name, null, $value, $label, $description),
+            'textarea'    => new Form\Element\Textarea($name, null, $value, $label, $description),
+            'select'      => new Form\Element\Select($name, $options ?? [], $value, $label, $description),
+            'radio'       => new Form\Element\Radio($name, $options ?? [], $value, $label, $description),
+            'switch',
+            'boolean'     => new Form\Element\Radio($name, $options ?? ['1' => _t('开启'), '0' => _t('关闭')], $value, $label, $description),
+            'checkbox',
+            'multiselect' => new Form\Element\Checkbox($name, $options ?? [], $value, $label, $description),
+            'number'      => new Form\Element\Number($name, null, $value, $label, $description),
+            'color'       => new Form\Element\Color($name, null, $value, $label, $description),
+            'url'         => new Form\Element\Url($name, null, $value, $label, $description),
+            default       => new Form\Element\Text($name, null, $value, $label, $description),
         };
     }
 }

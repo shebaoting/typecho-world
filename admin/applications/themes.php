@@ -7,9 +7,9 @@ $hasThemeConfig = \Widget\Themes\Config::isExists();
     <div class="col-mb-12">
         <?php if ($options->missingTheme): ?>
             <div class="message notice">
-                <p><strong><?php _e('检测到您之前使用的 "%s" 外观文件不存在，您可以重新上传此外观或者启用其他外观。', $options->missingTheme); ?></strong></p>
+                <p><strong><?php _e('检测到您之前使用的 "%s" 外观不存在或不兼容当前版本，请启用其他外观。', $options->missingTheme); ?></strong></p>
                 <ul>
-                    <li><?php _e('重新上传此外观后刷新当前页面，此提示将会消失。'); ?></li>
+                    <li><?php _e('主题必须声明不低于 Typecho World 2.0.0 的核心版本要求。'); ?></li>
                     <li><?php _e('启用新外观后，当前外观的设置数据将被删除。'); ?></li>
                 </ul>
             </div>
@@ -19,8 +19,9 @@ $hasThemeConfig = \Widget\Themes\Config::isExists();
             <?php \Widget\Themes\Rows::alloc()->to($themes); ?>
             <?php while ($themes->next()): ?>
                 <?php $isCurrentTheme = $themes->activated && !$options->missingTheme; ?>
+                <?php $isCompatibleTheme = (bool) $themes->coreCompatible; ?>
                 <article id="theme-<?php $themes->name(); ?>"
-                         class="typecho-theme-card<?php if ($isCurrentTheme): ?> current<?php endif; ?>"
+                         class="typecho-theme-card<?php if ($isCurrentTheme): ?> current<?php endif; ?><?php if (!$isCompatibleTheme): ?> deactivate<?php endif; ?>"
                          <?php if ($isCurrentTheme): ?>aria-current="true"<?php endif; ?>>
                     <figure class="typecho-theme-screen">
                         <?php if ($isCurrentTheme): ?><span class="sr-only"><?php _e('当前外观'); ?></span><?php endif; ?>
@@ -34,6 +35,11 @@ $hasThemeConfig = \Widget\Themes\Config::isExists();
                                 <?php if ($hasThemeConfig): ?>
                                     <a href="<?php $options->adminUrl('options-theme.php'); ?>"><?php _e('设置'); ?></a>
                                 <?php endif; ?>
+                            <?php elseif (!$isCompatibleTheme): ?>
+                                <?php if ($canEditTheme): ?>
+                                    <a href="<?php $options->adminUrl('theme-editor.php?theme=' . $themes->name); ?>"><?php _e('编辑'); ?></a>
+                                <?php endif; ?>
+                                <span><?php _e('不可启用'); ?></span>
                             <?php else: ?>
                                 <a href="<?php echo rtrim($options->siteUrl, '/') . '/?themePreview=' . rawurlencode($themes->name); ?>"
                                    target="_blank" rel="noopener"><?php _e('预览'); ?></a>
@@ -49,7 +55,11 @@ $hasThemeConfig = \Widget\Themes\Config::isExists();
                         <cite>
                             <?php if ($themes->author): ?><?php _e('作者'); ?>: <?php if ($themes->homepage): ?><a href="<?php $themes->homepage() ?>"><?php endif; ?><?php $themes->author(); ?><?php if ($themes->homepage): ?></a><?php endif; ?><?php endif; ?>
                             <?php if ($themes->version): ?><span><?php _e('版本'); ?>: <?php $themes->version() ?></span><?php endif; ?>
+                            <?php if ($themes->coreRequirement): ?><span><?php _e('核心'); ?>: <?php $themes->coreRequirement() ?></span><?php endif; ?>
                         </cite>
+                        <?php if (!$isCompatibleTheme): ?>
+                            <p class="description warning"><?php $themes->coreCompatibilityMessage(); ?></p>
+                        <?php endif; ?>
                         <p><?php echo nl2br($themes->description); ?></p>
                     </div>
                 </article>

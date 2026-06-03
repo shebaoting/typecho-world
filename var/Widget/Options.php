@@ -8,6 +8,7 @@ use Typecho\Config;
 use Typecho\Db;
 use Typecho\Router;
 use Typecho\Router\Parser;
+use Typecho\Theme\Manifest;
 use Typecho\Widget;
 use Typecho\Plugin\Exception as PluginException;
 use Typecho\Db\Exception as DbException;
@@ -431,7 +432,16 @@ class Options extends Base
      */
     protected function ___missingTheme(): ?string
     {
-        return !is_dir($this->themeFile($this->row['theme'])) ? $this->row['theme'] : null;
+        $theme = $this->row['theme'];
+        if (!is_dir($this->themeFile($theme))) {
+            return $theme;
+        }
+
+        try {
+            return Manifest::load($theme, $this)->isCompatible() ? null : $theme;
+        } catch (\Throwable) {
+            return $theme;
+        }
     }
 
     /**

@@ -3,7 +3,7 @@
 namespace Widget\Themes;
 
 use Typecho\Common;
-use Typecho\Plugin;
+use Typecho\Theme\Manifest;
 use Typecho\Widget;
 use Widget\Options;
 
@@ -35,15 +35,34 @@ class Rows extends Widget
             $result = [];
 
             foreach ($themes as $key => $theme) {
-                $themeFile = $theme . '/index.php';
-                if (file_exists($themeFile)) {
-                    $info = Plugin::parseInfo($themeFile);
-                    $info['name'] = $this->getTheme($theme);
+                $name = $this->getTheme($theme);
+                $manifest = Manifest::load($name, $options);
 
-                    if ($info['activated'] = ($options->theme == $info['name'])) {
-                        $activated = $key;
-                    }
+                if (!$manifest->hasFile($manifest->template('index') ?? 'index.php')) {
+                    continue;
+                }
 
+                $info = [
+                    'description'              => $manifest->get('description', ''),
+                    'title'                    => $manifest->get('title', $name),
+                    'author'                   => $manifest->get('author', ''),
+                    'homepage'                 => $manifest->get('homepage', ''),
+                    'version'                  => $manifest->get('version', ''),
+                    'name'                     => $name,
+                    'coreRequirement'          => $manifest->coreRequirement(),
+                    'coreCompatible'           => $manifest->isCompatible(),
+                    'coreCompatibilityMessage' => $manifest->compatibilityMessage(),
+                    'coreVersion'              => Common::VERSION,
+                ];
+
+                if ($info['activated'] = ($options->theme == $info['name'])) {
+                    $activated = $key;
+                }
+
+                $screen = $manifest->get('screenshot');
+                if (is_string($screen) && $manifest->hasFile($screen)) {
+                    $info['screen'] = $options->themeUrl($screen, $info['name']);
+                } else {
                     $screen = array_filter(glob($theme . '/*'), function ($path) {
                         return preg_match("/screenshot\.(jpg|png|gif|bmp|jpeg|webp|avif)$/i", $path);
                     });
@@ -53,14 +72,17 @@ class Rows extends Widget
                     } else {
                         $info['screen'] = Common::url('noscreen.png', $options->adminStaticUrl('img'));
                     }
-
-                    $result[$key] = $info;
                 }
+
+                $result[$key] = $info;
             }
 
-            $clone = $result[$activated];
-            unset($result[$activated]);
-            array_unshift($result, $clone);
+            if (isset($result[$activated])) {
+                $clone = $result[$activated];
+                unset($result[$activated]);
+                array_unshift($result, $clone);
+            }
+
             array_filter($result, [$this, 'push']);
         }
     }

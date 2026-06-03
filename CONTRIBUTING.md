@@ -1,37 +1,24 @@
-Contributing to Typecho
-=======================
+参与 Typecho World
+==================
 
-Thanks for considering contributing to Typecho! There are many ways to contribute to Typecho, and we appreciate all of them.
+感谢你考虑参与 Typecho World。这个项目会继续保留 Typecho 的轻量、简洁和速度，同时逐步建立更现代的主题与生态能力。
 
-## Reporting Bugs
+## 反馈问题
 
-If you find a bug in the source code, you can help us by [submitting an issue](https://github.com/typecho/typecho/issues) 
-to our [GitHub Repository](https://github.com/typecho/typecho). Even better, you can submit a Pull Request with a fix.
+如果你发现源码问题，可以提交 issue，也可以直接提交修复 PR。
 
-## Contributing Code
+## 贡献代码
 
-If you would like to contribute code to Typecho, please read the following guidelines:
+提交代码前请先阅读项目约定：
 
-* [Code of Conduct](CODE_OF_CONDUCT.md)
-* [Contributing Guide](CONTRIBUTING.md)
-* [Coding Style Guide](CODING_STYLE.md)
+* [行为准则](CODE_OF_CONDUCT.md)
+* [贡献指南](CONTRIBUTING.md)
+* [编码风格](CODING_STYLE.md)
 
-## Translations
+## 主题开发
 
-Please see [TRANSLATION](https://github.com/typecho/languages) for details.
+主题开发请阅读 [Typecho World 主题开发文档](docs/theme-development.md)。
 
-## Plugin Development
+## 插件开发
 
-Please see [Plugin Development](http://docs.typecho.org/plugins) for details.
-
-## Theme Development
-
-Please see [Theme Development](http://docs.typecho.org/themes) for details.
-
-## Community
-
-* [Telegram Channel](https://t.me/typechodev)
-* [Homepage](http://typecho.org/)
-* [Documents](http://docs.typecho.org/)
-* [Community](http://forum.typecho.org/)
-* [Download](http://typecho.org/download)
+插件开发文档会在后续生态阶段继续补齐。

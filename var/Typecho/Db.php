@@ -96,6 +96,20 @@ class Db
     private static Db $instance;
 
     /**
+     * 当前请求执行的查询次数
+     *
+     * @var int
+     */
+    private int $queryCount = 0;
+
+    /**
+     * 当前请求花在数据库查询上的秒数
+     *
+     * @var float
+     */
+    private float $queryTime = 0.0;
+
+    /**
      * 数据库类构造函数
      *
      * @param mixed $adapterName 适配器名称
@@ -393,7 +407,10 @@ class Db
         $sql = $query instanceof Query ? $query->prepareStatement($query, $params) : $query;
 
         /** 提交查询 */
+        $start = microtime(true);
         $resource = $this->adapter->query($sql, $handle, $op, $action, $table, $params);
+        $this->queryCount++;
+        $this->queryTime += microtime(true) - $start;
 
         if ($action) {
             //根据查询动作返回相应资源
@@ -413,6 +430,16 @@ class Db
             //如果直接执行查询语句则返回资源
             return $resource;
         }
+    }
+
+    public function getQueryCount(): int
+    {
+        return $this->queryCount;
+    }
+
+    public function getQueryTime(): float
+    {
+        return $this->queryTime;
     }
 
     /**

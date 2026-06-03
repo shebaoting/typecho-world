@@ -1,0 +1,47 @@
+{
+  "title": "Classic 22",
+  "description": "A clean official theme adapted to the modern Typecho World PHP theme API.",
+  "author": "Typecho World",
+  "homepage": "https://typecho.world",
+  "version": "2.0.0",
+  "typecho": {
+    "requires": ">=2.0.0"
+  },
+  "navigation": {
+    "primary": "主导航"
+  },
+  "tokens": {
+    "color": {
+      "accent": "#2474b5",
+      "text": "#1f2933",
+      "muted": "#667085"
+    },
+    "layout": {
+      "content-width": "720px",
+      "radius": "4px"
+    }
+  },
+  "settings": [
+    {
+      "name": "logoUrl",
+      "type": "url",
+      "label": "网站 Logo",
+      "description": "在这里填写图片 URL，网站将显示 Logo",
+      "rules": {
+        "url": "请填写正确的 URL 地址"
+      }
+    },
+    {
+      "name": "colorSchema",
+      "type": "select",
+      "label": "外观风格",
+      "description": "如果选择了自定义，主题将使用 theme.css 的样式",
+      "options": {
+        "": "自动",
+        "light": "浅色",
+        "dark": "深色",
+        "customize": "自定义"
+      }
+    }
+  ]
+}

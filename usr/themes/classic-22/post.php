@@ -1,26 +1,34 @@
-<?php if (!defined('__TYPECHO_ROOT_DIR__')) exit; ?>
-<?php $this->need('header.php'); ?>
+<?php
+/** @var \Typecho\Theme\ViewContext $view */
+/** @var \Widget\Archive $archive */
+/** @var \Widget\Options $site */
+/** @var \Typecho\Theme\Manifest $theme */
+/** @var \Typecho\Theme\Escaper $e */
+/** @var \Typecho\Theme\AssetManager $assets */
+/** @var \Typecho\Theme\DataProvider $data */
+/** @var \Widget\User $user */
+if (!defined('__TYPECHO_ROOT_DIR__')) exit;
+$view->layout('default');
+?>
 
 <main class="container">
     <div class="container-thin">
         <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
-            <?php postMeta($this, 'post'); ?>
+            <?php $view->component('post-meta', ['post' => $archive, 'metaType' => 'post']); ?>
 
             <div class="entry-content fmt" itemprop="articleBody">
-                <?php $this->content(); ?>
-                <p itemprop="keywords"><?php _e('标签'); ?>：<?php $this->tags(', ', true, _t('无')); ?></p>
+                <?php echo $view->content(); ?>
+                <p itemprop="keywords"><?php _e('标签'); ?>：<?php echo $view->tags(', ', true, _t('无')); ?></p>
             </div>
         </article>
 
         <nav class="post-nav">
             <ul class="page-navigator">
-                <li class="prev"><?php $this->thePrev('%s', _t('没有了')); ?></li>
-                <li class="next"><?php $this->theNext('%s', _t('没有了')); ?></li>
+                <li class="prev"><?php echo $view->thePrev('%s', _t('没有了')); ?></li>
+                <li class="next"><?php echo $view->theNext('%s', _t('没有了')); ?></li>
             </ul>
         </nav>
 
-        <?php $this->need('comments.php'); ?>
+        <?php $view->part('comments'); ?>
     </div>
 </main>
-
-<?php $this->need('footer.php'); ?>

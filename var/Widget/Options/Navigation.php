@@ -3,6 +3,7 @@
 namespace Widget\Options;
 
 use Typecho\Db\Exception;
+use Typecho\Theme\Manifest;
 use Typecho\Widget\Helper\Form;
 use Widget\ActionInterface;
 use Widget\Base\Options;
@@ -27,8 +28,16 @@ class Navigation extends Options implements ActionInterface
             $this->response->goBack();
         }
 
-        $items = $this->parseNavigation($this->request->get('navigationText', ''));
-        $value = json_encode($items);
+        $texts = $this->request->get('navigationText', []);
+        $texts = is_array($texts) ? $texts : ['primary' => (string) $texts];
+        $slots = Manifest::load($this->options->theme, $this->options)->navigationSlots();
+        $items = [];
+
+        foreach ($slots as $slot => $label) {
+            $items[$slot] = $this->parseNavigation((string) ($texts[$slot] ?? ''));
+        }
+
+        $value = json_encode($items, JSON_UNESCAPED_UNICODE);
 
         if ($this->options->__isSet('navigation')) {
             $this->update(['value' => $value], $this->db->sql()->where('name = ?', 'navigation'));
@@ -46,16 +55,20 @@ class Navigation extends Options implements ActionInterface
     public function form(): Form
     {
         $form = new Form($this->security->getIndex('/action/options-navigation'), Form::POST_METHOD);
-        $text = new Form\Element\Textarea(
-            'navigationText',
-            null,
-            $this->formatNavigation(),
-            _t('导航菜单'),
-            _t('每行一个菜单项，格式为：名称 | 地址。需要新窗口打开时，在第三列填写 _blank。')
-        );
-        $text->input->setAttribute('class', 'w-100 mono');
-        $text->input->setAttribute('rows', '10');
-        $form->addInput($text);
+        $slots = Manifest::load($this->options->theme, $this->options)->navigationSlots();
+
+        foreach ($slots as $slot => $label) {
+            $text = new Form\Element\Textarea(
+                'navigationText[' . $slot . ']',
+                null,
+                $this->formatNavigation($slot),
+                _t('%s', $label),
+                _t('每行一个菜单项，格式为：名称 | 地址。需要新窗口打开时，在第三列填写 _blank。')
+            );
+            $text->input->setAttribute('class', 'w-100 mono');
+            $text->input->setAttribute('rows', '8');
+            $form->addInput($text);
+        }
 
         $submit = new Form\Element\Submit(null, null, _t('保存菜单'));
         $submit->input->setAttribute('class', 'btn primary');
@@ -67,12 +80,13 @@ class Navigation extends Options implements ActionInterface
     /**
      * @return string
      */
-    private function formatNavigation(): string
+    private function formatNavigation(string $slot): string
     {
-        $items = json_decode((string) ($this->options->navigation ?? ''), true);
-        $items = is_array($items) ? $items : [];
+        $navigation = json_decode((string) ($this->options->navigation ?? ''), true);
+        $navigation = is_array($navigation) ? $navigation : [];
+        $items = $this->resolveNavigationSlot($navigation, $slot);
 
-        if (empty($items)) {
+        if (empty($items) && $slot === 'primary') {
             $items[] = ['label' => _t('首页'), 'url' => '/', 'target' => ''];
         }
 
@@ -85,6 +99,19 @@ class Navigation extends Options implements ActionInterface
 
             return $line;
         }, $items));
+    }
+
+    private function resolveNavigationSlot(array $navigation, string $slot): array
+    {
+        if (isset($navigation[$slot]) && is_array($navigation[$slot])) {
+            return $navigation[$slot];
+        }
+
+        if ($slot === 'primary' && isset($navigation[0]) && is_array($navigation[0])) {
+            return $navigation;
+        }
+
+        return [];
     }
 
     /**

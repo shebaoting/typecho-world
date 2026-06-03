@@ -125,6 +125,12 @@ function install_get_default_routers(): array
                 'widget' => '\Widget\Archive',
                 'action' => 'render',
             ],
+        'search_empty'       =>
+            [
+                'url'    => '/search/',
+                'widget' => '\Widget\Archive',
+                'action' => 'render',
+            ],
         'search'             =>
             [
                 'url'    => '/search/[keywords]/',

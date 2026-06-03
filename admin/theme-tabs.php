@@ -13,4 +13,5 @@
     <?php if (\Widget\Themes\Config::isExists()): ?>
         <li<?php if ($menu->getCurrentMenuUrl() === 'options-theme.php'): ?> class="current"<?php endif; ?>><a href="<?php $options->adminUrl('options-theme.php'); ?>"><?php _e('设置'); ?></a></li>
     <?php endif; ?>
+    <li<?php if ($menu->getCurrentMenuUrl() === 'theme-diagnostics.php'): ?> class="current"<?php endif; ?>><a href="<?php $options->adminUrl('theme-diagnostics.php'); ?>"><?php _e('诊断'); ?></a></li>
 </ul>

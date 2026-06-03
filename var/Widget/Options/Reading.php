@@ -3,6 +3,7 @@
 namespace Widget\Options;
 
 use Typecho\Db\Exception;
+use Typecho\Theme\Manifest;
 use Typecho\Plugin;
 use Typecho\Widget\Helper\Form;
 use Widget\Notice;
@@ -53,8 +54,8 @@ class Reading extends Permalink
             $settings['frontPage'] = 'page:' . $pageId;
         } elseif (
             'file' == $settings['frontPage'] && $this->request->is('frontPageFile') &&
-            file_exists(__TYPECHO_ROOT_DIR__ . '/' . __TYPECHO_THEME_DIR__ . '/' . $this->options->theme . '/' .
-                ($file = trim($this->request->get('frontPageFile'), " ./\\")))
+            ($file = Manifest::normalizePath($this->request->get('frontPageFile'))) !== null &&
+            is_file($this->options->themeFile($this->options->theme, $file))
         ) {
             $settings['frontPage'] = 'file:' . $file;
         } else {

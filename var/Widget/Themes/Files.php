@@ -2,6 +2,7 @@
 
 namespace Widget\Themes;
 
+use Typecho\Theme\Manifest;
 use Typecho\Widget;
 use Widget\Base;
 use Widget\Options;
@@ -50,22 +51,19 @@ class Files extends Base
 
         if (
             preg_match("/^([_0-9a-z-. ])+$/i", $this->currentTheme)
-            && is_dir($dir = Options::alloc()->themeFile($this->currentTheme))
+            && is_dir($dir = rtrim(Options::alloc()->themeFile($this->currentTheme), '/'))
             && (!defined('__TYPECHO_THEME_WRITEABLE__') || __TYPECHO_THEME_WRITEABLE__)
         ) {
-            $files = array_filter(glob($dir . '/*'), function ($path) {
-                return preg_match("/\.(php|js|css|vbs)$/i", $path);
-            });
+            $files = $this->scanFiles($dir);
 
-            $this->currentFile = $this->request->get('file', 'index.php');
+            $this->currentFile = Manifest::normalizePath($this->request->get('file', 'index.php')) ?? 'index.php';
 
             if (
-                preg_match("/^([_0-9a-z-. ])+$/i", $this->currentFile)
+                preg_match("/^([_0-9a-z-. \/])+$/i", $this->currentFile)
                 && file_exists($dir . '/' . $this->currentFile)
             ) {
                 foreach ($files as $file) {
-                    if (file_exists($file)) {
-                        $file = basename($file);
+                    if (file_exists($dir . '/' . $file)) {
                         $this->push([
                             'file'    => $file,
                             'theme'   => $this->currentTheme,
@@ -79,6 +77,28 @@ class Files extends Base
         }
 
         throw new Widget\Exception('风格文件不存在', 404);
+    }
+
+    private function scanFiles(string $dir): array
+    {
+        $files = [];
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $file) {
+            if (!$file->isFile() || !preg_match("/\.(php|js|css|vbs|json)$/i", $file->getFilename())) {
+                continue;
+            }
+
+            $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($dir) + 1));
+            if (Manifest::normalizePath($relative) !== null) {
+                $files[] = $relative;
+            }
+        }
+
+        sort($files);
+        return $files;
     }
 
     /**

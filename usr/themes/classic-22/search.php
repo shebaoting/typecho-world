@@ -1,30 +1,34 @@
-<?php if (!defined('__TYPECHO_ROOT_DIR__')) exit; ?>
-<?php $this->need('header.php'); ?>
+<?php
+/** @var \Typecho\Theme\ViewContext $view */
+/** @var \Widget\Archive $archive */
+/** @var \Widget\Options $site */
+/** @var \Typecho\Theme\Manifest $theme */
+/** @var \Typecho\Theme\Escaper $e */
+/** @var \Typecho\Theme\AssetManager $assets */
+/** @var \Typecho\Theme\DataProvider $data */
+/** @var \Widget\User $user */
+if (!defined('__TYPECHO_ROOT_DIR__')) exit;
+$view->layout('default');
+?>
 
 <main class="container">
     <div class="container-thin">
 
         <h1 class="text-center"><?php _e('搜索'); ?></h1>
         
-        <form method="post" action="<?php $this->options->siteUrl(); ?>">
-            <input type="search" id="s" name="s" placeholder="<?php _e('搜索关键字'); ?>" value="<?php $this->archiveTitle('','',''); ?>">
+        <form method="post" action="<?php echo $e->url($view->siteUrl()); ?>">
+            <input type="search" id="s" name="s" placeholder="<?php _e('搜索关键字'); ?>" value="<?php echo $e->attr($archive->getArchiveTitle()); ?>">
         </form>
 
         <div class="text-center">
-            <?php \Widget\Metas\Category\Rows::alloc()->listCategories('wrapClass=list-inline'); ?>
+            <?php echo $data->categoriesHtml('wrapClass=list-inline'); ?>
         </div>
     
         <hr class="post-separator">
 
-    <?php if ($this->have()): ?>
-        <?php while ($this->next()): ?>
-        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
-            <?php postMeta($this); ?>
-            
-            <div class="entry-content fmt" itemprop="articleBody">
-                <?php $this->content('阅读全文'); ?>
-            </div>
-        </article>
+    <?php if ($archive->have()): ?>
+        <?php while ($archive->next()): ?>
+        <?php $view->component('post-card', ['post' => $archive, 'moreText' => _t('阅读全文')]); ?>
         <hr class="post-separator">
         <?php endwhile; ?>
     <?php else: ?>
@@ -36,7 +40,5 @@
     <?php endif; ?>
     </div>
 
-    <?php $this->pageNav('&laquo; 前一页', '后一页 &raquo;'); ?>
+    <?php echo $view->pageNav('&laquo; 前一页', '后一页 &raquo;'); ?>
 </main>
-
-<?php $this->need('footer.php'); ?>

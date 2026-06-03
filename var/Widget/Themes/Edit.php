@@ -3,6 +3,7 @@
 namespace Widget\Themes;
 
 use Typecho\Common;
+use Typecho\Theme\Manifest;
 use Typecho\Widget\Exception;
 use Typecho\Widget\Helper\Form;
 use Widget\ActionInterface;
@@ -35,6 +36,15 @@ class Edit extends Options implements ActionInterface
     {
         $theme = trim($theme, './');
         if (is_dir($this->options->themeFile($theme))) {
+            $manifest = Manifest::load($theme, $this->options);
+            if (!$manifest->hasFile($manifest->template('index') ?? 'index.php')) {
+                throw new Exception(_t('您选择的外观缺少 index.php，无法启用'));
+            }
+
+            if (!$manifest->isCompatible()) {
+                throw new Exception(_t('无法启用外观：%s', $manifest->compatibilityMessage()));
+            }
+
             /** 删除原外观设置信息 */
             $oldTheme = $this->options->missingTheme ?: $this->options->theme;
             $this->delete($this->db->sql()->where('name = ?', 'theme:' . $oldTheme));
@@ -48,31 +58,29 @@ class Edit extends Options implements ActionInterface
 
             $this->options->themeUrl = $this->options->themeUrl(null, $theme);
 
-            $configFile = $this->options->themeFile($theme, 'functions.php');
+            $form = new Form();
+            $schema = Config::getSchema($theme);
 
-            if (file_exists($configFile)) {
-                require_once $configFile;
+            if (!empty($schema)) {
+                Config::applySchema($form, $schema);
+            } else {
+                $configFile = $this->options->themeFile($theme, 'functions.php');
 
-                if (function_exists('themeConfigSchema') || function_exists('themeConfig')) {
-                    $form = new Form();
-                    $schema = Config::getSchema($theme);
-
-                    if (!empty($schema)) {
-                        Config::applySchema($form, $schema);
-                    } else {
+                if (file_exists($configFile)) {
+                    require_once $configFile;
+                    if (function_exists('themeConfig')) {
                         themeConfig($form);
                     }
-
-                    $options = $form->getValues();
-
-                    if ($options && !$this->configHandle($options, true)) {
-                        $this->insert([
-                            'name'  => 'theme:' . $theme,
-                            'value' => json_encode($options),
-                            'user'  => 0
-                        ]);
-                    }
                 }
+            }
+
+            $themeOptions = $form->getValues();
+            if ($themeOptions && !$this->configHandle($themeOptions, true)) {
+                $this->insert([
+                    'name'  => 'theme:' . $theme,
+                    'value' => json_encode($themeOptions),
+                    'user'  => 0
+                ]);
             }
 
             Notice::alloc()->highlight('theme-' . $theme);
@@ -109,10 +117,11 @@ class Edit extends Options implements ActionInterface
      */
     public function editThemeFile(string $theme, string $file)
     {
+        $file = Manifest::normalizePath($file) ?? '';
         $path = $this->options->themeFile($theme, $file);
 
         if (
-            file_exists($path) && is_writable($path)
+            $file !== '' && is_file($path) && is_writable($path)
             && (!defined('__TYPECHO_THEME_WRITEABLE__') || __TYPECHO_THEME_WRITEABLE__)
         ) {
             $handle = fopen($path, 'wb');

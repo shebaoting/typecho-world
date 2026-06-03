@@ -1,5 +1,15 @@
-<?php if (!defined('__TYPECHO_ROOT_DIR__')) exit; ?>
-<?php $this->need('header.php'); ?>
+<?php
+/** @var \Typecho\Theme\ViewContext $view */
+/** @var \Widget\Archive $archive */
+/** @var \Widget\Options $site */
+/** @var \Typecho\Theme\Manifest $theme */
+/** @var \Typecho\Theme\Escaper $e */
+/** @var \Typecho\Theme\AssetManager $assets */
+/** @var \Typecho\Theme\DataProvider $data */
+/** @var \Widget\User $user */
+if (!defined('__TYPECHO_ROOT_DIR__')) exit;
+$view->layout('default');
+?>
 
 <main class="container">
     <div class="container-thin">
@@ -12,8 +22,6 @@
             <li>Доступ к текущей странице невозможен, возможно, у нее нет разрешения или она была удалена.</li>
             <li>現在のページにアクセスできない、権限がない、または削除された可能性があります。</li>
         </ul>
-        <p class="text-center"><a href="<?php $this->options->siteUrl(); ?>" role="button" class="outline"><?php _e('回首页'); ?></a></p>
+        <p class="text-center"><a href="<?php echo $e->url($view->siteUrl()); ?>" role="button" class="outline"><?php _e('回首页'); ?></a></p>
     </div>
 </main>
-
-<?php $this->need('footer.php'); ?>

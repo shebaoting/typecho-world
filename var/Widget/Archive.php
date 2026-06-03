@@ -7,6 +7,12 @@ use Typecho\Config;
 use Typecho\Cookie;
 use Typecho\Db;
 use Typecho\Db\Query;
+use Typecho\Plugin;
+use Typecho\Theme\Event\ThemeResolving;
+use Typecho\Theme\Manifest;
+use Typecho\Theme\Renderer;
+use Typecho\Theme\TemplateResolver;
+use Typecho\Theme\WpCompat\Runtime as WpCompatRuntime;
 use Typecho\Router;
 use Typecho\Widget\Exception as WidgetException;
 use Typecho\Widget\Helper\PageNavigator\Classic;
@@ -40,7 +46,7 @@ class Archive extends Contents
      *
      * @var string
      */
-    private string $themeFile;
+    private string $themeFile = '';
 
     /**
      * 风格目录
@@ -177,7 +183,14 @@ class Archive extends Contents
      * @access private
      * @var string
      */
-    private string $archiveSlug;
+    private string $archiveSlug = '';
+
+    /**
+     * 当前请求的模板候选链
+     *
+     * @var array
+     */
+    private array $themeTemplateCandidates = [];
 
     /**
      * @param Config $parameter
@@ -538,6 +551,34 @@ class Archive extends Contents
     }
 
     /**
+     * 获取全局选项, 供现代主题运行时使用
+     *
+     * @return Options
+     */
+    public function getOptions(): Options
+    {
+        return $this->options;
+    }
+
+    /**
+     * 获取当前用户组件, 供现代主题运行时使用
+     *
+     * @return User
+     */
+    public function getUser(): User
+    {
+        return $this->user;
+    }
+
+    /**
+     * @return array
+     */
+    public function getThemeTemplateCandidates(): array
+    {
+        return $this->themeTemplateCandidates;
+    }
+
+    /**
      * 应用临时主题预览
      *
      * @return void
@@ -552,6 +593,10 @@ class Archive extends Contents
             || !$this->user->pass('administrator', true)
             || !is_dir($this->options->themeFile($theme))
         ) {
+            return;
+        }
+
+        if (!Manifest::load($theme, $this->options)->isCompatible()) {
             return;
         }
 
@@ -592,6 +637,7 @@ class Archive extends Contents
             'archive_month_page' => 'dateHandle',
             'archive_day'        => 'dateHandle',
             'archive_day_page'   => 'dateHandle',
+            'search_empty'       => 'searchHandle',
             'search'             => 'searchHandle',
             'search_page'        => 'searchHandle'
         ];
@@ -706,6 +752,11 @@ class Archive extends Contents
             (!$this->invokeFromOutside || $this->parameter->type == 404 || $this->parameter->preview)
             && file_exists($functionsFile)
         ) {
+            $manifest = Manifest::load($this->options->theme, $this->options);
+            if ($manifest->support('wpCompat')) {
+                WpCompatRuntime::preload($this->options->theme, $this->options);
+            }
+
             require_once $functionsFile;
             if (function_exists('themeInit')) {
                 themeInit($this);
@@ -1124,12 +1175,13 @@ class Archive extends Contents
      *
      * @return array
      */
-    public function getNavigationItems(): array
+    public function getNavigationItems(string $slot = 'primary'): array
     {
-        $items = json_decode((string) ($this->options->navigation ?? ''), true);
-        $items = is_array($items) ? $items : [];
+        $navigation = json_decode((string) ($this->options->navigation ?? ''), true);
+        $navigation = is_array($navigation) ? $navigation : [];
+        $items = $this->resolveNavigationSlot($navigation, $slot);
 
-        if (empty($items)) {
+        if (empty($items) && $slot === 'primary') {
             $items[] = ['label' => _t('首页'), 'url' => '/', 'target' => ''];
 
             $pages = PageRows::allocWithAlias('navigation');
@@ -1154,6 +1206,19 @@ class Archive extends Contents
         }, $items)));
     }
 
+    private function resolveNavigationSlot(array $navigation, string $slot): array
+    {
+        if (isset($navigation[$slot]) && is_array($navigation[$slot])) {
+            return $navigation[$slot];
+        }
+
+        if ($slot === 'primary' && isset($navigation[0]) && is_array($navigation[0])) {
+            return $navigation;
+        }
+
+        return [];
+    }
+
     /**
      * 输出导航菜单
      *
@@ -1163,11 +1228,12 @@ class Archive extends Contents
      */
     public function navMenu(
         string $format = '<a href="{url}"{class}{target}>{label}</a>',
-        string $currentClass = 'current'
+        string $currentClass = 'current',
+        string $slot = 'primary'
     ) {
         $currentUrl = rtrim($this->getCanonicalUrl() ?? $this->request->getRequestUrl(), '/');
 
-        foreach ($this->getNavigationItems() as $item) {
+        foreach ($this->getNavigationItems($slot) as $item) {
             $url = rtrim($item['url'], '/');
             $class = $url === $currentUrl ? ' class="' . $currentClass . '"' : '';
             $target = '_blank' === $item['target'] ? ' target="_blank" rel="noopener"' : '';
@@ -1557,73 +1623,19 @@ EOF;
         if (2 == $this->options->allowXmlRpc) {
             $this->response->setHeader('X-Pingback', $this->options->xmlRpcUrl);
         }
-        $valid = false;
-
-        //~ 自定义模板
-        if (!empty($this->themeFile)) {
-            if (file_exists($this->themeDir . $this->themeFile)) {
-                $valid = true;
-            }
-        }
-
-        if (!$valid && !empty($this->archiveType)) {
-            //~ 首先找具体路径, 比如 category/default.php
-            if (!empty($this->archiveSlug)) {
-                $themeFile = $this->archiveType . '/' . $this->archiveSlug . '.php';
-                if (file_exists($this->themeDir . $themeFile)) {
-                    $this->themeFile = $themeFile;
-                    $valid = true;
-                }
-            }
-
-            //~ 然后找归档类型路径, 比如 category.php
-            if (!$valid) {
-                $themeFile = $this->archiveType . '.php';
-                if (file_exists($this->themeDir . $themeFile)) {
-                    $this->themeFile = $themeFile;
-                    $valid = true;
-                }
-            }
-
-            //针对attachment的hook
-            if (!$valid && 'attachment' == $this->archiveType) {
-                if (file_exists($this->themeDir . 'page.php')) {
-                    $this->themeFile = 'page.php';
-                    $valid = true;
-                } elseif (file_exists($this->themeDir . 'post.php')) {
-                    $this->themeFile = 'post.php';
-                    $valid = true;
-                }
-            }
-
-            //~ 最后找归档路径, 比如 archive.php 或者 single.php
-            if (!$valid && 'index' != $this->archiveType && 'front' != $this->archiveType) {
-                $themeFile = $this->archiveSingle ? 'single.php' : 'archive.php';
-                if (file_exists($this->themeDir . $themeFile)) {
-                    $this->themeFile = $themeFile;
-                    $valid = true;
-                }
-            }
-
-            if (!$valid) {
-                $themeFile = 'index.php';
-                if (file_exists($this->themeDir . $themeFile)) {
-                    $this->themeFile = $themeFile;
-                    $valid = true;
-                }
-            }
-        }
-
-        /** 文件不存在 */
-        if (!$valid) {
-            throw new WidgetException(_t('文件不存在'), 500);
-        }
+        $manifest = Manifest::load($this->options->theme, $this->options);
+        $resolver = new TemplateResolver($manifest);
+        [$this->themeFile, $this->themeTemplateCandidates] = $resolver->resolve($this);
+        $themeResolving = new ThemeResolving($this, $manifest, $this->themeFile, $this->themeTemplateCandidates);
+        Plugin::events()->dispatch($themeResolving);
+        $this->themeFile = $themeResolving->template();
+        $this->themeTemplateCandidates = $themeResolving->candidates();
 
         /** 挂接插件 */
         self::pluginHandle()->call('beforeRender', $this);
 
         /** 输出模板 */
-        require_once $this->themeDir . $this->themeFile;
+        Renderer::render($this, $this->themeFile, $manifest);
 
         /** 挂接插件 */
         self::pluginHandle()->call('afterRender', $this);
@@ -2324,12 +2336,10 @@ EOF;
     {
         /** 增加自定义搜索引擎接口 */
         //~ fix issue 40
-        $keywords = $this->request->filter('url', 'search')->get('keywords');
+        $keywords = trim((string) $this->request->filter('url', 'search')->get('keywords'));
         self::pluginHandle()->trigger($hasPushed)->call('search', $keywords, $this);
 
         if (!$hasPushed) {
-            $searchQuery = '%' . str_replace(' ', '%', $keywords) . '%';
-
             /** 搜索无法进入隐私项保护归档 */
             if ($this->user->hasLogin()) {
                 //~ fix issue 941
@@ -2339,10 +2349,15 @@ EOF;
                 $select->where("table.contents.password IS NULL OR table.contents.password = ''");
             }
 
-            $op = $this->db->getAdapter()->getDriver() == 'pgsql' ? 'ILIKE' : 'LIKE';
+            if ($keywords === '') {
+                $select->where('1 = 0');
+            } else {
+                $searchQuery = '%' . str_replace(' ', '%', $keywords) . '%';
+                $op = $this->db->getAdapter()->getDriver() == 'pgsql' ? 'ILIKE' : 'LIKE';
 
-            $select->where("table.contents.title {$op} ? OR table.contents.text {$op} ?", $searchQuery, $searchQuery)
-                ->where('table.contents.type = ?', 'post');
+                $select->where("table.contents.title {$op} ? OR table.contents.text {$op} ?", $searchQuery, $searchQuery)
+                    ->where('table.contents.type = ?', 'post');
+            }
         }
 
         /** 设置关键词 */
@@ -2388,7 +2403,9 @@ EOF;
         $this->archiveSlug = $keywords;
 
         /** 设置归档地址 */
-        $this->archiveUrl = Router::url('search', $this->pageRow, $this->options->index);
+        $this->archiveUrl = $keywords === ''
+            ? Common::url('/search/', $this->options->index)
+            : Router::url('search', $this->pageRow, $this->options->index);
 
         /** 插件接口 */
         self::pluginHandle()->call('searchHandle', $this, $select);

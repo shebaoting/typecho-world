@@ -31,9 +31,13 @@ config.inc.*
 usr/uploads/
 usr/cache/
 usr/*.db
+/doc/
+/docs/
 usr/plugins/*
 usr/themes/*
-!usr/themes/default
-!usr/themes/classic-22
+!usr/themes/default/
+!usr/themes/default/**
+!usr/themes/classic-22/
+!usr/themes/classic-22/**
 node_modules/
 tools/tmp/
