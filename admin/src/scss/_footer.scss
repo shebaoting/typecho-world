@@ -1,20 +1,31 @@
 /**
-* 注脚
-*/
+ * Footer
+ */
+
 .typecho-foot {
-  padding: 4em 0 3em;
-  color: #999;
+  width: 100%;
+  padding: 48px 18px 34px;
+  color: $color-text-weak;
+  font-size: 13px;
   line-height: 1.8;
   text-align: center;
 
   .copyright p {
     margin: 0;
   }
+
   .resource {
-    color: #CCC;
+    margin-top: 4px;
+    color: $color-border-strong;
   }
+
   .resource a {
-    margin: 0 3px;
-    color: #999;
+    margin: 0 4px;
+    color: $color-text-weak;
+
+    &:hover,
+    &:focus {
+      color: $color-text-muted;
+    }
   }
 }

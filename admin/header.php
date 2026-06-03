@@ -10,6 +10,17 @@ $header = '<link rel="stylesheet" href="' . $options->adminStaticUrl('css', 'nor
 /** 注册一个初始化插件 */
 $header = \Typecho\Plugin::factory('admin/header.php')->filter('header', $header);
 
+$bodyClasses = ['typecho-admin'];
+if (isset($bodyClass) && $bodyClass) {
+    $bodyClasses = array_merge($bodyClasses, preg_split('/\s+/', trim($bodyClass)));
+}
+
+if (isset($menu) && $menu->getCurrentMenu()) {
+    $menuFile = basename(strtok($menu->getCurrentMenuUrl(), '?'));
+    if ($menuFile) {
+        $bodyClasses[] = 'admin-page-' . preg_replace('/[^a-z0-9]+/', '-', strtolower(pathinfo($menuFile, PATHINFO_FILENAME)));
+    }
+}
 ?><!DOCTYPE HTML>
 <html>
     <head>
@@ -20,4 +31,4 @@ $header = \Typecho\Plugin::factory('admin/header.php')->filter('header', $header
         <meta name="robots" content="noindex, nofollow">
         <?php echo $header; ?>
     </head>
-    <body<?php if (isset($bodyClass)) {echo ' class="' . $bodyClass . '"';} ?>>
+    <body class="<?php echo implode(' ', array_unique(array_filter($bodyClasses))); ?>">

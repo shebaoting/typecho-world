@@ -21,6 +21,7 @@
   @extend %box-sizing;
   display: flex;
   flex-wrap: wrap;
+  width: 100%;
 }
 
 // Column group
@@ -29,7 +30,7 @@
   margin-left: $gutter-width / -2;
   display: flex;
   flex-wrap: wrap;
-  width: 100vw;
+  width: 100%;
 }
 
 .row [class*="col-"] {
@@ -57,7 +58,7 @@
 // Tablet and up
 @include screen(tablet) {
   .container {
-    max-width: $screen-tablet - ($gutter-width * 2);
+    max-width: $screen-tablet - $gutter-width;
   }
 
   @for $index from 1 through $columns {
@@ -89,7 +90,7 @@
 // Desktop and up
 @include screen(desktop) {
   .container {
-    max-width: $screen-desktop - ($gutter-width * 2);
+    max-width: $screen-desktop - $gutter-width;
   }
 
   @for $index from 1 through $columns {

@@ -1,27 +1,16 @@
 /**
-* 表格列表页
-*/
-
-/**
-* 列表页选项
-*/
-.typecho-list .typecho-pager {
-}
+ * Lists and tables
+ */
 
 .typecho-list-operate {
   display: flex;
-  margin: 1em 0;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: 0 0 14px;
 
   & + .typecho-list-operate {
-    margin-top: 0;
-  }
-
-  input, button, select {
-    vertical-align: bottom;
-  }
-
-  input[type="checkbox"] {
-    vertical-align: text-top;
+    margin-top: 14px;
   }
 
   a:hover {
@@ -32,77 +21,84 @@
     flex: 1;
   }
 
-  .operate, .search {
+  .operate,
+  .search {
     display: flex;
     align-items: center;
+    gap: 7px;
+    min-width: 0;
   }
 
   .operate {
+    flex-wrap: wrap;
+
     label {
-      display: flex;
-    }
-
-    > * {
-      margin-right: 5px;
+      display: inline-flex;
+      align-items: center;
     }
   }
 
-  > *:nth-child(2) {
+  .search {
     justify-content: flex-end;
+    flex-wrap: wrap;
 
-    &.search > * {
-      margin-left: 5px;
-    }
-  }
-
-  @include screen(phone, max) {
-    & {
-      flex-flow: column;
-
-      > *:nth-child(2) {
-        margin-top: 10px;
-        justify-content: flex-start;
-
-        > *:first-child {
-          margin-left: 0;
-        }
-      }
+    input[type="text"] {
+      width: min(220px, 100%);
     }
   }
 }
 
-.operate-delete, .operate-button-delete {
-  color: #B94A48;
+.operate-form + .typecho-list-operate {
+  margin-top: 22px;
+}
+
+.typecho-list-table + .typecho-list-operate,
+.typecho-list-table + form.typecho-list-operate {
+  margin-top: 22px;
+}
+
+.operate-delete,
+.operate-button-delete {
+  color: $color-danger;
 }
 
 .operate-edit {
-  color: #007700;
+  color: $color-success;
 }
 
 .operate-reply {
-  color: #545c30;
+  color: $color-link;
 }
 
-/**
-* 列表表格
-*/
-/** 增加表格标题 by 70 */
+.operate-approved {
+  color: $color-success;
+}
+
+.operate-spam,
+.operate-waiting {
+  color: $color-warning;
+}
+
 .typecho-list-table-title {
-  margin: 1em 0;
-  color: #999;
-  text-align: center;
+  margin: 18px 0 10px;
+  color: $color-text-muted;
+  font-size: 15px;
+  font-weight: 650;
+  text-align: left;
 }
 
 .typecho-list-table {
   width: 100%;
+  border: 1px solid $color-border;
   border-collapse: separate;
+  border-radius: $radius-md;
   border-spacing: 0;
-  background: #FFF;
+  background: $color-surface;
   table-layout: fixed;
-  border: 30px solid #FFF;
+  overflow: hidden;
 
   &.deactivate {
-    color: #999;
+    color: $color-text-weak;
   }
 
   .right {
@@ -110,66 +106,137 @@
   }
 
   th {
-    padding: 0 10px 10px;
-    border-bottom: 1px solid #F0F0EC;
+    padding: 12px 12px;
+    border-bottom: 1px solid $color-border;
+    color: $color-text-weak;
+    font-size: 12px;
+    font-weight: 650;
+    letter-spacing: 0;
     text-align: left;
   }
 
   td {
-    padding: 10px;
-    border-top: 1px solid #F0F0EC;
-    word-break: break-all;
+    padding: 13px 12px;
+    border-top: 1px solid $color-border-subtle;
+    color: $color-text-muted;
+    word-break: break-word;
+    vertical-align: middle;
 
     pre {
       overflow: auto;
     }
 
     &.none {
-      color: #999;
+      padding: 36px 12px;
+      color: $color-text-weak;
       text-align: center;
     }
   }
 
-  .status {
-    margin-left: 5px;
-    color: #999;
-    font-size: .92857em;
-    font-style: normal;
+  thead + tbody tr:first-child td {
+    border-top: none;
   }
 
   tbody tr {
+    transition: background-color $transition-fast;
+
     &:hover {
-      background-color: #F6F6F3;
+      background-color: $color-surface-hover;
     }
 
     &:has(input[type="checkbox"]:checked) {
-      background-color: #FFF9E8;
+      background-color: $color-surface-selected;
     }
+  }
+
+  a {
+    font-weight: 600;
+  }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 20px;
+    margin: 3px 0 0 5px;
+    padding: 0 7px;
+    border: 1px solid $color-border;
+    border-radius: 999px;
+    background: $color-surface-muted;
+    color: $color-text-muted;
+    font-size: 12px;
+    font-style: normal;
+    line-height: 18px;
+    white-space: nowrap;
   }
 
   tr td .hidden-by-mouse {
     opacity: 0;
+    transition: opacity $transition-fast;
   }
 
-  tr:hover td .hidden-by-mouse {
+  tr:hover td .hidden-by-mouse,
+  tr:focus-within td .hidden-by-mouse {
     opacity: 1;
   }
 
   tr td:first-child input[type="checkbox"] {
     display: block;
   }
+}
 
-  @include screen(phone, max) {
-    & {
-      border-width: 10px;
+a.balloon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid $color-border;
+  border-radius: 999px;
+  background: $color-surface-muted;
+  color: $color-text-muted;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 20px;
+  text-align: center;
+  white-space: nowrap;
 
-      th {
-        padding: 0 5px 5px;
-      }
+  &:hover,
+  &:focus {
+    border-color: $color-border-strong;
+    background-color: $color-accent-soft;
+    color: $color-accent;
+  }
+}
 
-      td {
-        padding: 5px;
-      }
+@include screen(phone, max) {
+  .typecho-list-operate {
+    align-items: stretch;
+    flex-flow: column;
+
+    > *:nth-child(2) {
+      justify-content: flex-start;
+    }
+
+    .search {
+      justify-content: flex-start;
+    }
+
+    .search input[type="text"],
+    .search select,
+    .search button {
+      width: 100%;
+    }
+  }
+
+  .typecho-list-table {
+    display: block;
+    overflow-x: auto;
+    border-radius: $radius-md;
+
+    th,
+    td {
+      padding: 10px 8px;
     }
   }
 }

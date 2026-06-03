@@ -1,107 +1,161 @@
 /**
-* 编写页面
-*/
+ * Writing pages
+ */
 
 .typecho-post-area {
+  align-items: flex-start;
+  gap: 0;
+
+  > [class*="col-"] {
+    min-width: 0;
+  }
+
   .edit-draft-notice {
-    color: #999;
-    font-size: .92857em;
+    display: inline-flex;
+    margin: 0 0 12px;
+    padding: 7px 10px;
+    border: 1px solid $color-warning-soft;
+    border-radius: $radius-sm;
+    background: $color-warning-soft;
+    color: $color-warning;
+    font-size: 13px;
+    font-style: normal;
 
     a {
-      color: #B94A48;
+      color: $color-danger;
+      font-weight: 650;
     }
   }
 
   .typecho-label {
     display: block;
-    margin: 1em 0 -0.5em;
-    font-weight: bold;
+    margin: 18px 0 7px;
+    color: $color-text;
+    font-size: 13px;
+    font-weight: 650;
   }
 
-  .submit {
-    display: flex;
-    justify-content: space-between;
-
-    #auto-save-message {
-      color: #999;
-      font-size: .92857em;
-    }
-
-    .left {
-      display: flex;
-      align-items: center;
-
-      > * {
-        margin-right: 8px;
-      }
-    }
-
-    .right {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-
-      > * {
-        margin-left: 8px;
-      }
-    }
+  p.title {
+    width: 100%;
+    margin: 0 0 8px;
   }
 
   input.title {
-    font-size: 1.17em;
-    font-weight: bold;
+    display: block;
+    width: 100%;
+    min-height: auto;
+    padding: 2px 0 8px;
+    border: none;
+    border-bottom: 1px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    color: $color-text;
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1.24;
+
+    &:focus {
+      border-color: $color-border;
+      box-shadow: none;
+    }
+
+    &::placeholder {
+      color: lighten($color-text-weak, 9%);
+    }
   }
 
   .url-slug {
-    margin-top: -0.5em;
-    color: #AAA;
-    font-size: .92857em;
+    margin: 0 0 14px;
+    color: $color-text-weak;
+    font-size: 13px;
     word-break: break-word;
   }
 
   #slug {
-    padding: 2px;
-    border: none;
-    background: #FFFBCC;
-    color: #666;
+    min-height: 26px;
+    padding: 2px 7px;
+    border: 1px solid $color-border;
+    border-radius: $radius-xs;
+    background: $color-surface-muted;
+    color: $color-text-muted;
   }
 
   #text {
+    width: 100%;
+    min-height: 420px;
+    padding: 18px 20px;
+    border-color: $color-border;
+    border-radius: $radius-md;
+    background: $color-surface;
+    color: $color-text;
+    font-size: 15px;
+    line-height: 1.75;
     resize: none;
   }
 
   .description {
-    margin-top: -0.5em;
-    color: #999;
-    font-size: .92857em;
+    margin-top: 6px;
+    color: $color-text-weak;
+    font-size: 13px;
+  }
+
+  .submit {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 18px 0 0;
+    padding: 14px 0 0;
+    border-top: 1px solid $color-border;
+
+    #auto-save-message {
+      color: $color-text-weak;
+      font-size: 13px;
+    }
+
+    .left,
+    .right {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .right {
+      justify-content: flex-end;
+    }
   }
 
   /**
-   * 自定义字段
+   * Custom fields
    */
   #custom-field {
-    margin: 1em 0;
-    padding: 10px 15px;
-    background: #FFF;
+    margin: 18px 0;
+    padding: 14px 16px;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    background: $color-surface;
 
     summary {
-      font-weight: bold;
+      color: $color-text;
+      font-weight: 650;
       cursor: pointer;
 
       &:hover {
-        color: #467B96;
+        color: $color-link;
       }
 
       &::marker {
-        color: #BBB;
+        color: $color-text-weak;
       }
     }
 
     .add {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-top: 10px;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 12px;
 
       .description {
         margin-top: 0;
@@ -109,8 +163,8 @@
     }
 
     p.description {
+      margin-top: 8px;
       text-align: left;
-      margin-top: 0;
     }
 
     .typecho-label {
@@ -118,25 +172,25 @@
 
       a {
         display: block;
-        color: #444;
+        color: $color-text;
 
         &:hover {
-          color: #467B96;
-          text-decoration: none;
+          color: $color-link;
         }
       }
     }
 
     .fields {
-      list-style: none;
-      margin: 10px 0 0 0;
+      margin: 12px 0 0;
       padding: 0;
+      list-style: none;
 
       .field {
         display: flex;
-        padding-bottom: 10px;
-        border-bottom: 1px solid #F0F0EC;
-        margin-bottom: 10px;
+        gap: 10px;
+        padding-bottom: 12px;
+        margin-bottom: 12px;
+        border-bottom: 1px solid $color-border-subtle;
 
         &:last-child {
           margin-bottom: 0;
@@ -144,62 +198,93 @@
 
         .field-name {
           display: flex;
+          gap: 8px;
 
           input[name="fieldNames[]"] {
-            height: 27px;
-            width: 150px;
-            margin-right: 10px;
+            width: 160px;
+            height: 31px;
+            margin-right: 0;
           }
         }
 
         .field-value {
-          margin-left: 10px;
           flex: 1;
           display: flex;
+          gap: 8px;
+          min-width: 0;
+          margin-left: 0;
 
           textarea[name="fieldValues[]"] {
             flex: 1;
-            margin-right: 10px;
+            margin-right: 0;
             resize: none;
-          }
-        }
-
-        @include screen(phone, max) {
-          flex-flow: column;
-
-          .field-value {
-            margin-left: 0;
-            margin-top: 10px;
           }
         }
       }
     }
-
-    select { height: 27px; }
   }
 
   /**
-   * 侧边栏
+   * Secondary properties panel
    */
   #edit-secondary {
-    margin-top: 1em;
+    position: sticky;
+    top: 76px;
+    margin-top: 0;
 
-    .category-option ul {
-      list-style: none;
-      border: 1px solid #D9D9D6;
-      padding: 6px 12px;
-      max-height: 240px;
-      overflow: auto;
-      background-color: #FFF;
-      border-radius: 2px;
+    .typecho-option-tabs {
+      width: 100%;
+      margin-bottom: 12px;
 
       li {
-        margin: 3px 0;
+        flex: 1;
+      }
+
+      a {
+        width: 100%;
+      }
+    }
+
+    .tab-content {
+      padding: 14px;
+      border: 1px solid $color-border;
+      border-radius: $radius-md;
+      background: $color-surface;
+    }
+
+    .typecho-post-option {
+      padding: 0 0 15px;
+      margin: 0 0 15px;
+      border-bottom: 1px solid $color-border-subtle;
+
+      &:last-child {
+        padding-bottom: 0;
+        margin-bottom: 0;
+        border-bottom: none;
+      }
+
+      p {
+        margin: 8px 0 0;
+      }
+    }
+
+    .category-option ul {
+      max-height: 240px;
+      margin: 8px 0 0;
+      padding: 8px 10px;
+      overflow: auto;
+      border: 1px solid $color-border;
+      border-radius: $radius-sm;
+      background-color: $color-surface-strong;
+      list-style: none;
+
+      li {
+        margin: 5px 0;
       }
     }
 
     .post-option-panels {
-      margin: 1em 0;
+      margin: 0;
     }
 
     .post-option-panel-actions {
@@ -218,7 +303,7 @@
 
       .i-caret-down {
         margin-left: 4px;
-        transition: transform .2s ease;
+        transition: transform $transition-fast;
         transform-origin: 50% 35%;
       }
     }
@@ -230,28 +315,189 @@
     .post-option-panel-content {
       width: 100%;
       min-width: 0;
-      margin-top: 8px;
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid $color-border;
+      border-radius: $radius-md;
+      background: $color-surface-strong;
 
       > .typecho-post-option:first-child .typecho-label {
         margin-top: 0;
       }
     }
 
-    .seo-option {
-      p {
-        margin: 8px 0 0;
-      }
+    .seo-option p {
+      margin: 9px 0 0;
 
-      p:first-child {
+      &:first-child {
         margin-top: 0;
       }
     }
 
-    #advance-panel {
-      .visibility-option ul,
-      .allow-option ul {
-        list-style: none;
-        padding: 0;
+    #advance-panel .visibility-option ul,
+    #advance-panel .allow-option ul {
+      margin: 8px 0 0;
+      padding: 0;
+      list-style: none;
+
+      li {
+        margin: 6px 0;
+      }
+    }
+  }
+}
+
+.admin-page-write-post,
+.admin-page-write-page {
+  .main {
+    padding-top: 28px;
+  }
+
+  .typecho-page-title {
+    margin-bottom: 24px;
+
+    h2 {
+      font-size: 21px;
+    }
+  }
+
+  .typecho-post-area {
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(300px, 1fr);
+    gap: 28px;
+    width: 100%;
+    margin-right: 0;
+    margin-left: 0;
+
+    > [class*="col-"] {
+      flex: none;
+      width: auto;
+      max-width: none;
+      padding-right: 0;
+      padding-left: 0;
+    }
+
+    > [role="main"] {
+      min-width: 0;
+      padding: 0;
+    }
+
+    p.title {
+      margin-bottom: 10px;
+    }
+
+    input.title {
+      font-size: clamp(34px, 2.8vw, 46px);
+      line-height: 1.18;
+    }
+
+    .url-slug {
+      margin-bottom: 18px;
+      font-size: 14px;
+    }
+
+    .editor {
+      margin-bottom: 10px;
+    }
+
+    #wmd-button-bar {
+      position: sticky;
+      top: 18px;
+      z-index: 20;
+    }
+
+    #text {
+      min-height: clamp(560px, calc(100vh - 360px), 820px);
+      padding: 24px 26px;
+      font-size: 16px;
+      line-height: 1.82;
+    }
+
+    #wmd-preview {
+      min-height: clamp(560px, calc(100vh - 360px), 820px);
+      padding: 24px 28px;
+      font-size: 16px;
+      line-height: 1.78;
+    }
+
+    #custom-field {
+      margin-top: 26px;
+    }
+
+    .submit {
+      margin-top: 24px;
+      padding-top: 18px;
+
+      .right {
+        margin-left: auto;
+      }
+    }
+
+    #edit-secondary {
+      top: 28px;
+      align-self: start;
+      max-height: calc(100vh - 56px);
+      overflow: auto;
+      padding-right: 2px;
+
+      .tab-content {
+        padding: 18px;
+      }
+
+      .typecho-label {
+        margin-top: 0;
+      }
+    }
+  }
+}
+
+@include screen(tablet, max) {
+  .admin-page-write-post,
+  .admin-page-write-page {
+    .typecho-post-area {
+      display: block;
+
+      #edit-secondary {
+        position: static;
+        max-height: none;
+        margin-top: 22px;
+        overflow: visible;
+      }
+    }
+  }
+}
+
+@include screen(phone, max) {
+  .typecho-post-area {
+    input.title {
+      font-size: 25px;
+    }
+
+    .submit {
+      align-items: stretch;
+      flex-direction: column;
+
+      .left,
+      .right {
+        justify-content: stretch;
+
+        .btn,
+        button {
+          flex: 1 1 auto;
+        }
+      }
+    }
+
+    #custom-field .fields .field {
+      flex-flow: column;
+
+      .field-name,
+      .field-value {
+        flex-flow: column;
+      }
+
+      .field-name input[name="fieldNames[]"] {
+        width: 100%;
       }
     }
   }

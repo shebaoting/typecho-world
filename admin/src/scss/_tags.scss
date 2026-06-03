@@ -1,38 +1,50 @@
 /**
-* 标签列表
-*/
+ * Tag list
+ */
 
 .tag-list {
-  list-style: none;
-  margin: 0;
-  padding: 20px;
-  background-color: #FFF;
   display: flex;
   flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  background-color: $color-surface;
+  list-style: none;
 
   .none {
-    color: #999;
     width: 100%;
     margin: 0;
+    color: $color-text-weak;
     text-align: center;
   }
 
   &.typecho-list-notable li {
-    margin: 0 5px 5px 0;
-    padding: 5px 5px 5px 10px;
-    cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
+    min-height: 30px;
+    margin: 0;
+    padding: 0 9px;
+    border: 1px solid $color-border;
+    border-radius: 999px;
+    background: $color-surface-strong;
+    color: $color-text-muted;
+    cursor: pointer;
+    font-size: 13px !important;
 
     .tag-edit-link {
-      margin-left: 3px;
-      visibility: hidden;
-      display: flex;
+      display: inline-flex;
       align-items: center;
+      margin-left: 5px;
+      visibility: hidden;
     }
 
-    &:hover {
-      background-color: #E9E9E6;
+    &:hover,
+    &:focus-within {
+      border-color: $color-border-strong;
+      background-color: $color-surface-hover;
+      color: $color-text;
 
       .tag-edit-link {
         visibility: visible;
@@ -40,27 +52,8 @@
     }
 
     &:has(input[type="checkbox"]:checked) {
-      background-color: #FFFBCC;
-    }
-
-    &.size-5 {
-      font-size: 1em;
-    }
-
-    &.size-10 {
-      font-size: 1.2em;
-    }
-
-    &.size-20 {
-      font-size: 1.4em;
-    }
-
-    &.size-30 {
-      font-size: 1.6em;
-    }
-
-    &.size-0 {
-      font-size: 1.8em;
+      border-color: darken($color-warning-soft, 12%);
+      background-color: $color-surface-selected;
     }
 
     input {

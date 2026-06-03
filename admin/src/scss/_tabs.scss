@@ -1,50 +1,67 @@
 /**
-* 标签页
-*/
+ * Tabs
+ */
+
 .typecho-option-tabs {
-  list-style: none;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
   margin: 0;
-  padding: 0;
+  padding: 4px;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  background: rgba($color-surface, .75);
   font-size: 13px;
-  display: flex;
+  list-style: none;
 
   &.fix-tabs {
-    margin: 1em 0;
+    margin: 0 0 18px;
   }
 
   li {
-    &:first-child a {
-      border-radius: 2px 0 0 2px;
+    min-width: 0;
+
+    &.current a,
+    &.active a {
+      background-color: $color-surface-muted;
+      color: $color-text;
+      font-weight: 650;
+    }
+  }
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    min-width: 0;
+    padding: 0 12px;
+    border-radius: $radius-sm;
+    color: $color-text-muted;
+    white-space: nowrap;
+
+    > * {
+      margin: 0 3px;
     }
 
-    &:last-child a {
-      border-radius: 0 2px 2px 0;
+    &:hover,
+    &:focus {
+      background-color: $color-surface-hover;
+      color: $color-text;
     }
+  }
+}
 
-    &.current a, &.active a {
-      background-color: #E9E9E6;
-    }
+@include screen(phone, max) {
+  .typecho-option-tabs {
+    width: 100%;
+  }
 
-    a {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-right: -1px;
-      border: 1px solid #D9D9D6;
-      padding: 0 15px;
-      height: 26px;
-      color: #666;
-      box-sizing: border-box;
+  .typecho-option-tabs li {
+    flex: 1 1 auto;
+  }
 
-      > * {
-        margin: 0 3px;
-      }
-
-      &:hover {
-        background-color: #E9E9E6;
-        color: #666;
-        text-decoration: none;
-      }
-    }
+  .typecho-option-tabs a {
+    width: 100%;
   }
 }

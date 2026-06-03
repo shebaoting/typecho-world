@@ -304,9 +304,18 @@ class Menu extends Base
                 continue;
             }
 
-            echo "<li" . ($key == $this->currentParent ? " class=\"{$class}\"" : '')
-                . "><a href=\"{$node[2]}\">{$node[0]}</a>"
-                . "<menu>";
+            $isCurrentParent = $key == $this->currentParent;
+            $parentClass = trim('has-children ' . ($isCurrentParent ? "{$class} is-open" : ''));
+            $subMenuId = 'typecho-nav-submenu-' . $key;
+
+            echo "<li class=\"{$parentClass}\">"
+                . "<span class=\"typecho-nav-topline\">"
+                . "<a href=\"{$node[2]}\">{$node[0]}</a>"
+                . "<button class=\"typecho-nav-toggle\" type=\"button\" aria-controls=\"{$subMenuId}\" aria-expanded=\""
+                . ($isCurrentParent ? 'true' : 'false')
+                . "\"><span class=\"sr-only\">" . _t('展开或收起') . "</span><i class=\"i-caret-down\"></i></button>"
+                . "</span>"
+                . "<menu id=\"{$subMenuId}\">";
 
             foreach ($node[3] as $inKey => $inNode) {
                 if ($inNode[4]) {

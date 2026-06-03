@@ -2,7 +2,7 @@
 * Editor
 */
 .editor {
-  margin-bottom: -0.5em;
+  margin-bottom: 8px;
 }
 
 $icon-path: "../img/icons";
@@ -22,6 +22,12 @@ $icon-path: "../img/icons";
 #wmd-button-bar {
   display: flex;
   align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 7px;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  background: $color-surface;
 
   .wmd-button-row {
     flex: 1;
@@ -33,14 +39,14 @@ $icon-path: "../img/icons";
 
     li {
       display: inline-block;
-      margin-right: 4px;
-      padding: 3px;
+      margin-right: 2px;
+      padding: 4px;
       cursor: pointer;
       vertical-align: middle;
-      border-radius: 2px;
+      border-radius: $radius-sm;
 
       &:hover {
-        background-color: #E9E9E6;
+        background-color: $color-surface-hover;
       }
 
       &.wmd-spacer {
@@ -48,7 +54,7 @@ $icon-path: "../img/icons";
         margin: 0 10px 0 6px;
         padding: 0;
         width: 1px;
-        background: #E9E9E6;
+        background: $color-border;
         cursor: default;
       }
 
@@ -56,11 +62,11 @@ $icon-path: "../img/icons";
         display: block;
         width: 20px;
         height: 20px;
-        color: #999;
+        color: $color-text-weak;
       }
 
       &:hover span {
-        color: #666;
+        color: $color-text;
       }
 
       @include editor-button(bold);
@@ -89,16 +95,19 @@ $icon-path: "../img/icons";
       display: inline-block;
       padding: 0 8px;
       margin-left: 5px;
-      height: 20px;
-      line-height: 20px;
+      height: 24px;
+      border-radius: $radius-sm;
+      line-height: 24px;
+      color: $color-text-muted;
 
       &:hover {
-        text-decoration: none;
+        background: $color-surface-hover;
+        color: $color-text;
       }
 
       &.active {
-        background: #E9E9E6;
-        color: #999;
+        background: $color-surface-muted;
+        color: $color-text;
       }
     }
   }
@@ -117,7 +126,7 @@ $icon-path: "../img/icons";
 
 /* 对话框 */
 .wmd-prompt-background {
-  background-color: #000;
+  background-color: rgba(47, 42, 36, .42);
 }
 .wmd-prompt-dialog {
   position: fixed;
@@ -128,7 +137,10 @@ $icon-path: "../img/icons";
   margin-left: -200px;
   padding: 20px;
   width: 360px;
-  background: #F6F6F3;
+  border: 1px solid $color-border;
+  border-radius: $radius-lg;
+  background: $color-surface;
+  box-shadow: $shadow-popover;
 
   p { margin: 0 0 5px; }
   form { margin-top: 10px; }
@@ -145,69 +157,71 @@ $icon-path: "../img/icons";
     display: block;
     margin: 2px auto 0;
     padding: 2px 0;
-    border: 1px solid #D9D9D6;
+    border: 1px solid $color-border;
     border-width: 1px 0;
     width: 60px;
     cursor: row-resize;
     i {
       display: block;
       height: 1px;
-      background-color: #D9D9D6;
+      background-color: $color-border;
     }
   }
 }
 
 /* 预览 */
 #wmd-preview {
-  background: #FFF;
+  background: $color-surface;
   margin: 1em 0;
-  padding: 0 15px;
+  padding: 8px 20px;
+  border: 1px solid $color-border;
   word-wrap: break-word;
   overflow: auto;
-  border-radius: 2px;
+  border-radius: $radius-md;
   img { max-width: 100%; }
   code, pre {
     padding: 2px 4px;
-    background: #DDD;
+    background: $color-surface-muted;
     font-size: 14px;
   }
-  code { color: #C13; }
+  code { color: $color-danger; }
   pre {
     padding: 1em;
     code {
       padding: 0;
-      color: #444;
+      color: $color-text;
     }
   }
   blockquote {
     margin: 1em 1.5em;
     padding-left: 1.5em;
-    border-left: 4px solid #E9E9E6;
-    color: #777;
+    border-left: 4px solid $color-border;
+    color: $color-text-muted;
   }
   hr {
     margin: 2em auto;
     width: 100px;
-    border: 1px solid #E9E9E6;
+    border: 1px solid $color-border;
     border-width: 2px 0 0 0;
   }
   .summary:after {
     display: block;
     margin: 2em 0;
-    background: #FFF9E8;
-    color: darken(#FFF9E8, 55%);
+    border-radius: $radius-sm;
+    background: $color-surface-selected;
+    color: $color-warning;
     font-size: .85714em;
     text-align: center;
     content: "- more -";
   }
   .embed {
-    border: 1px solid #ccc;
+    border: 1px solid $color-border;
     height: 40px;
     overflow: hidden;
     line-height: 40px;
     text-align: center;
     font-size: 12px;
-    color: #777;
+    color: $color-text-muted;
   }
 
   table {
@@ -215,13 +229,13 @@ $icon-path: "../img/icons";
   }
 
   table th, table td {
-    border: 1px solid #DDD;
+    border: 1px solid $color-border;
     padding: 5px 8px;
     word-break: break-all;
   }
 
   table th {
-    background: #EEE;
+    background: $color-surface-muted;
   }
   span.line {
     display: inline;
@@ -248,7 +262,7 @@ $icon-path: "../img/icons";
     position: absolute;
     top: 0;
     width: 50%;
-    background: #FFF;
+    background: $color-surface;
     z-index: 999;
     box-sizing: border-box;
     border-radius: 0;
@@ -256,7 +270,9 @@ $icon-path: "../img/icons";
   #wmd-button-bar {
     left: 0;
     padding: 13px 20px;
-    border-bottom: 1px solid #F3F3F0;
+    border: none;
+    border-bottom: 1px solid $color-border;
+    border-radius: 0;
     z-index: 1000;
   }
   #text {
@@ -272,19 +288,19 @@ $icon-path: "../img/icons";
     margin: 0;
     padding: 5px 20px;
     border: none;
-    border-left: 1px solid #F3F3F0;
-    background: #F6F6F3;
+    border-left: 1px solid $color-border;
+    background: $color-page;
     overflow: auto;
   }
   .submit {
     right: 0;
     margin: 0;
     padding: 10px 20px;
-    border-bottom: 1px solid #F3F3F0;
+    border-bottom: 1px solid $color-border;
   }
   #upload-panel {
-    -webkit-box-shadow: 0 4px 16px rgba(0,0,0,0.225);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.225);
+    -webkit-box-shadow: $shadow-popover;
+    box-shadow: $shadow-popover;
     border-style: solid;
   }
 
@@ -314,10 +330,10 @@ $icon-path: "../img/icons";
 }
 
 .preview {
-  .submit { width: 100%; background: #FFFFDD }
+  .submit { width: 100%; background: $color-warning-soft }
   #wmd-button-bar, #wmd-preview, #text, #upload-panel, #tab-files, #btn-preview, #btn-fullscreen-upload, #auto-save-message { display: none }
   .preview-frame { width: 100%; border: 0; padding: 0; margin: 0;
-    background: #fff; z-index: 999; position: absolute; top: 53px; left: 0 }
+    background: $color-surface; z-index: 999; position: absolute; top: 53px; left: 0 }
 
   .preview-loading { background-image: url(../img/ajax-loader.svg); background-position: center; background-repeat: no-repeat }
   #btn-cancel-preview { display: inline-block }

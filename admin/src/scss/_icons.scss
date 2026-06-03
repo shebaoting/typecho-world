@@ -45,54 +45,54 @@ $icon-path: "../img/icons";
 @mixin mime-icon($name) {
   @extend %i-16;
   @include icon-mask("mime-#{$name}");
-  color: #999;
+  color: $color-text-weak;
 }
 
 .i-edit {
   @include action-icon(edit);
-  color: #070;
+  color: $color-success;
 }
 
 .i-delete {
   @include action-icon(delete);
-  color: #B94A48;
+  color: $color-danger;
 }
 
 .i-upload {
   @extend %i-24;
   @include icon-mask(icon-upload);
-  color: #999;
+  color: $color-text-weak;
 }
 
 .i-upload-active {
   @extend %i-24;
   @include icon-mask(icon-upload-active);
-  color: #467B96;
+  color: $color-accent;
 }
 
 // Carets
 .i-caret-up, .i-caret-down, .i-caret-left, .i-caret-right {
   display: inline-block;
   border-style: solid;
-  border-color: transparent transparent #BBB transparent;
+  border-color: transparent transparent $color-text-weak transparent;
   border-width: 3px 4px 5px;
 }
 .i-caret-down {
-  border-color: #BBB transparent transparent transparent;
+  border-color: $color-text-weak transparent transparent transparent;
   border-width: 5px 4px 3px;
 }
 .i-caret-left {
-  border-color: transparent #BBB transparent transparent;
+  border-color: transparent $color-text-weak transparent transparent;
   border-width: 4px 5px 4px 3px;
 }
 .i-caret-right {
-  border-color: transparent transparent transparent #BBB;
+  border-color: transparent transparent transparent $color-text-weak;
   border-width: 4px 3px 4px 5px;
 }
 
 .i-exlink {
   @include action-icon(exlink);
-  color: #467B96;
+  color: $color-link;
 }
 
 /* File type icons */
@@ -146,9 +146,9 @@ $icon-path: "../img/icons";
   background: url("../img/typecho-logo.svg") no-repeat;
   text-indent: -9999em;
   background-size: auto 40px;
-  opacity: .15;
+  opacity: .52;
   &:hover {
-    opacity: .2;
+    opacity: .68;
   }
 }
 .i-logo-s {

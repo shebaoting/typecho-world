@@ -1,37 +1,46 @@
 /**
-* 后台分页
-*/
+ * Pager
+ */
 
 .typecho-pager {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  list-style: none;
+  flex-wrap: wrap;
+  gap: 4px;
   margin: 0;
   padding: 0;
   line-height: 1;
+  list-style: none;
   text-align: center;
-  zoom: 1;
 
   li {
-    margin: 0 3px;
-    height: 28px;
-    line-height: 28px;
+    min-width: 30px;
+    height: 30px;
+    line-height: 30px;
+  }
 
-    a {
-      display: block;
-      padding: 0 10px;
-      border-radius: 2px;
+  a {
+    display: block;
+    min-width: 30px;
+    height: 30px;
+    padding: 0 9px;
+    border: 1px solid transparent;
+    border-radius: $radius-sm;
+    color: $color-text-muted;
 
-      &:hover {
-        text-decoration: none;
-        background: #E9E9E6;
-      }
+    &:hover,
+    &:focus {
+      border-color: $color-border;
+      background: $color-surface-hover;
+      color: $color-text;
     }
+  }
 
-    &.current a {
-      background: #E9E9E6;
-      color: #444;
-    }
+  li.current a {
+    border-color: $color-border;
+    background: $color-surface-muted;
+    color: $color-text;
+    font-weight: 650;
   }
 }

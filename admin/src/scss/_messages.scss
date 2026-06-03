@@ -1,78 +1,97 @@
-
 /**
-* 提示信息框
-*/
-.message {
-  padding: 8px 10px;
-  border-radius: 2px;
-}
+ * Messages
+ */
 
-.message a {
-  font-weight: bold;
-  text-decoration: underline;
+.message {
+  margin: 0 0 16px;
+  padding: 11px 13px;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  background: $color-surface;
+  color: $color-text-muted;
+
+  p:first-child {
+    margin-top: 0;
+  }
+
+  p:last-child {
+    margin-bottom: 0;
+  }
+
+  a {
+    font-weight: 650;
+    text-decoration: none;
+  }
 }
 
 .error {
-  background: #FBE3E4;
-  color: #8A1F11;
+  border-color: lighten($color-danger, 36%);
+  background: $color-danger-soft;
+  color: $color-danger;
 }
-.error a { color: #8A1F11; }
+
+.error a {
+  color: $color-danger;
+}
 
 .notice {
-  background: #FFF6BF;
-  color: #8A6D3B;
+  border-color: darken($color-warning-soft, 9%);
+  background: $color-warning-soft;
+  color: $color-warning;
 }
-.notice a { color: #8A6D3B; }
+
+.notice a {
+  color: $color-warning;
+}
 
 .success {
-  background: #E6EFC2;
-  color: #264409;
-}
-.success a { color: #264409; }
-
-.warning {
-  color: #B94A48;
+  border-color: darken($color-success-soft, 8%);
+  background: $color-success-soft;
+  color: $color-success;
 }
 
+.success a {
+  color: $color-success;
+}
 
-// 气泡
 .balloon {
-  display: inline-block;
-  padding: 0 4px;
-  min-width: 10px;
-  height: 14px;
-  line-height: 14px;
-  background: #B9B9B6;
-  vertical-align: text-top;
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: $color-surface-muted;
+  color: $color-text-muted;
   font-size: 12px;
-  color: #FFF;
-
-  border-radius: 20px;
+  font-weight: 650;
+  line-height: 18px;
+  text-align: center;
+  vertical-align: text-top;
 }
 
-/** 顶部消息样式 by 70 */
 .popup {
-  display: none;
   position: sticky;
-  margin: 0;
-  padding: 8px 0;
-  border: none;
+  top: 0;
+  z-index: 80;
+  display: none;
   width: 100%;
-  z-index: 10;
-  text-align: center;
-
+  margin: 0;
+  padding: 9px 0;
+  border-width: 0 0 1px;
   border-radius: 0;
+  text-align: center;
 
   ul {
-    list-style: none;
     margin: 0;
     padding: 0;
+    list-style: none;
     text-align: center;
+  }
 
-    li {
-      display: inline-block;
-      margin-right: 10px;
-    }
+  li {
+    display: inline-block;
+    margin-right: 10px;
   }
 }
