@@ -187,43 +187,291 @@ img {
  * Login and register
  */
 .typecho-login-wrap {
+  position: relative;
   display: grid;
   place-items: center;
   min-height: 100vh;
-  padding: 36px 18px;
+  padding: clamp(28px, 6vh, 72px) clamp(18px, 5vw, 72px);
+  background:
+    linear-gradient(135deg, rgba($color-surface-strong, .78) 0%, rgba($color-surface-hover, .54) 46%, rgba($color-accent-soft, .30) 100%),
+    $color-page;
+  overflow: hidden;
+
+  &::before {
+    position: fixed;
+    inset: 0;
+    background:
+      repeating-linear-gradient(0deg, rgba($color-border-subtle, .32) 0 1px, transparent 1px 34px),
+      linear-gradient(90deg, rgba($color-link, .06), transparent 34%, rgba($color-accent, .05));
+    content: "";
+    opacity: .68;
+    pointer-events: none;
+  }
 
   .typecho-login {
-    width: min(360px, 100%);
-    text-align: center;
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: min(1120px, 100%);
+    min-height: 650px;
+    border: 1px solid rgba($color-border, .92);
+    border-radius: $radius-md;
+    background:
+      linear-gradient(180deg, rgba($color-surface-strong, .74), rgba($color-surface-hover, .64)),
+      rgba($color-surface, .62);
+    box-shadow: 0 28px 90px rgba(47, 42, 36, .10);
+    overflow: hidden;
+    text-align: left;
+  }
 
-    h1 {
-      margin: 0 0 26px;
+  .login-brand-pane {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 100%;
+    padding: clamp(46px, 6vw, 76px);
+    background: transparent;
+
+    &::before {
+      position: absolute;
+      top: clamp(44px, 7vw, 86px);
+      right: 0;
+      bottom: clamp(44px, 7vw, 86px);
+      width: 1px;
+      background: linear-gradient(180deg, transparent, rgba($color-border-strong, .62), transparent);
+      content: "";
     }
 
-    form {
-      padding: 22px;
-      border: 1px solid $color-border;
-      border-radius: $radius-lg;
-      background: rgba($color-surface, .84);
+    h1 {
+      margin: 0;
+
+      .login-wordmark {
+        display: inline-flex;
+        align-items: center;
+        max-width: 100%;
+        gap: 16px;
+        color: rgba($color-text, .72);
+        text-decoration: none;
+
+        &:hover {
+          color: rgba($color-text, .82);
+        }
+      }
+
+      .login-wordmark-icon {
+        display: block;
+        flex: 0 0 auto;
+        width: 72px;
+        height: 72px;
+        background: url(../img/typecho-logo.svg) no-repeat left center;
+        background-size: auto 72px;
+        opacity: .72;
+        overflow: hidden;
+      }
+
+      .login-wordmark-text {
+        color: currentColor;
+        font-family: "Bradley Hand", "Segoe Print", "Comic Sans MS", "STKaiti", "KaiTi", cursive;
+        font-size: clamp(34px, 3.1vw, 48px);
+        font-weight: 700;
+        line-height: 1;
+        white-space: nowrap;
+      }
+    }
+  }
+
+  .login-brand-copy {
+    position: relative;
+    z-index: 1;
+    max-width: 410px;
+
+    span {
+      display: block;
+      color: $color-link;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.4;
     }
 
     p {
-      margin: 0 0 14px;
+      margin: 15px 0 0;
+      color: $color-text;
+      font-size: clamp(25px, 2.55vw, 34px);
+      font-weight: 650;
+      line-height: 1.55;
     }
+  }
 
-    .submit {
-      margin-top: 18px;
-      margin-bottom: 12px;
-    }
+  .login-form-pane {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(44px, 6vw, 72px);
+    background: transparent;
+  }
 
-    .more-link {
-      margin-top: 18px;
+  .login-form-head {
+    margin-bottom: 30px;
+
+    span {
+      display: block;
+      margin-bottom: 8px;
       color: $color-text-weak;
       font-size: 13px;
+      font-weight: 700;
+    }
 
-      a {
-        margin: 0 4px;
-        color: $color-text-muted;
+    strong {
+      display: block;
+      color: $color-text;
+      font-size: 30px;
+      font-weight: 650;
+      line-height: 1.2;
+    }
+  }
+
+  form {
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  p {
+    margin: 0 0 16px;
+  }
+
+  .submit {
+    margin-top: 24px;
+    margin-bottom: 20px;
+  }
+
+  input.text-l {
+    display: block;
+    width: 100%;
+    min-height: 56px;
+    padding-right: 18px;
+    padding-left: 18px;
+    border-radius: $radius-sm;
+    background: rgba($color-surface-strong, .94);
+    font-size: 16px;
+  }
+
+  .btn-l {
+    min-height: 56px;
+    border-radius: $radius-sm;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  label[for="remember"] {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: $color-text-muted;
+    font-size: 14px;
+
+    input {
+      margin-right: 0;
+    }
+  }
+
+  .more-link {
+    margin: 28px 0 0;
+    color: $color-text-weak;
+    font-size: 14px;
+    text-align: center;
+
+    a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      margin: 0 4px;
+      padding: 0 11px;
+      border-radius: $radius-sm;
+      color: $color-text-muted;
+
+      &:hover,
+      &:focus {
+        background: rgba($color-surface-hover, .9);
+        color: $color-text;
+      }
+    }
+  }
+}
+
+@include screen(tablet, max) {
+  .typecho-login-wrap {
+    .typecho-login {
+      grid-template-columns: 1fr;
+      min-height: 0;
+    }
+
+    .login-brand-pane {
+      min-height: 260px;
+      border-right: 0;
+      border-bottom: 1px solid rgba($color-border, .78);
+
+      &::before {
+        display: none;
+      }
+    }
+  }
+}
+
+@include screen(phone, max) {
+  .typecho-login-wrap {
+    padding: 18px;
+
+    .typecho-login {
+      display: block;
+
+      .login-brand-pane,
+      .login-form-pane {
+        padding: 28px 22px;
+      }
+
+      .login-brand-pane {
+        min-height: 220px;
+      }
+
+      .login-brand-copy p {
+        font-size: 26px;
+      }
+
+      h1 {
+        margin-bottom: 28px;
+
+        .login-wordmark {
+          gap: 12px;
+        }
+
+        .login-wordmark-icon {
+          width: 54px;
+          height: 54px;
+          background-size: auto 54px;
+        }
+
+        .login-wordmark-text {
+          font-size: 34px;
+        }
+      }
+
+      .login-form-head {
+        margin-bottom: 24px;
+
+        strong {
+          font-size: 26px;
+        }
+      }
+
+      input.text-l,
+      .btn-l {
+        min-height: 52px;
+        font-size: 16px;
       }
     }
   }

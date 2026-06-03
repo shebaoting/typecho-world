@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
+import * as esbuild from 'esbuild';
 import * as sass from 'sass';
 import { minify } from 'terser';
 
@@ -109,6 +110,26 @@ async function minifyJs(file, dist)
     fs.writeFileSync(outFile, result.code);
 }
 
+async function bundleJs(file, dist)
+{
+    const outFile = path.join(dist, file);
+
+    console.log(chalk.green('bundle ' + file));
+    fs.mkdirSync(path.dirname(outFile), {recursive: true});
+
+    await esbuild.build({
+        entryPoints: [path.join(srcDir, 'js', file)],
+        outfile: outFile,
+        bundle: true,
+        minify: true,
+        format: 'iife',
+        platform: 'browser',
+        target: ['es2018'],
+        nodePaths: [path.join(__dirname, 'node_modules')],
+        legalComments: 'inline'
+    });
+}
+
 function listFiles(dir, regExp)
 {
     if (!fs.existsSync(dir)) {
@@ -141,8 +162,14 @@ async function main()
         syncVendorJs(action === 'js_jquery4' ? 'jquery4' : 'jquery3');
 
         for (const file of listFiles(path.join(srcDir, 'js'), /^[-\w]+\.js$/)) {
+            if (file === 'tiptap-editor.js') {
+                continue;
+            }
+
             await minifyJs(file, path.join(distDir, 'js'));
         }
+
+        await bundleJs('tiptap-editor.js', path.join(distDir, 'js'));
     } else if (action === 'theme_css') {
         console.log(chalk.blue('build theme css'));
 

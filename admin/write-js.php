@@ -27,12 +27,16 @@ $(document).ready(function() {
         amNames         :   ['<?php _e('上午'); ?>', 'A'],
         pmNames         :   ['<?php _e('下午'); ?>', 'P'],
         minuteText      :   '<?php _e('分'); ?>',
-        secondText      :   '<?php _e('秒'); ?>',
-
         dateFormat      :   'yy-mm-dd',
+        timeFormat      :   'HH:mm',
+        showSecond      :   false,
+        showMillisec    :   false,
+        showMicrosec    :   false,
+        showTimezone    :   false,
         timezone        :   <?php $options->timezone(); ?> / 60,
         hour            :   (new Date()).getHours(),
-        minute          :   (new Date()).getMinutes()
+        minute          :   (new Date()).getMinutes(),
+        showButtonPanel :   true
     });
 
     // 聚焦
@@ -145,7 +149,8 @@ $(document).ready(function() {
         idInput = $('input[name=cid]'),
         draft = $('input[name=draft]'),
         btnPreview = $('#btn-preview'),
-        autoSave = $('<span id="auto-save-message"></span>').prependTo('.left');
+        statusTarget = $('.write-status').length > 0 ? $('.write-status') : $('.left').first(),
+        autoSave = $('<span id="auto-save-message"></span>').prependTo(statusTarget);
 
     let cid = idInput.val(),
         draftId = draft.length > 0 ? draft.val() : 0,
@@ -309,21 +314,158 @@ $(document).ready(function() {
         }
     });
 
-    // 控制选项和附件的切换
-    $('#edit-secondary .typecho-option-tabs li').click(function() {
-        $('#edit-secondary .typecho-option-tabs li.active').removeClass('active');
-        $('#edit-secondary .tab-content').addClass('hidden');
+    // 写作页右上角浮层
+    const settingsPanel = $('#write-settings-panel'),
+        settingsToggle = $('.write-panel-toggle'),
+        customFieldsPanel = $('#write-custom-fields-panel'),
+        customFieldsToggle = $('.write-custom-fields-toggle'),
+        floatingPanels = settingsPanel.add(customFieldsPanel),
+        floatingToggles = settingsToggle.add(customFieldsToggle);
 
-        const activeTab = $(this).addClass('active').find('a').attr('href');
-        $(activeTab).removeClass('hidden');
+    function closeFloatingPanels(exceptPanel) {
+        floatingPanels.each(function () {
+            const panel = $(this);
+
+            if (exceptPanel && panel.is(exceptPanel)) {
+                return;
+            }
+
+            panel.addClass('hidden');
+            floatingToggles.filter('[aria-controls="' + panel.attr('id') + '"]').attr('aria-expanded', 'false');
+        });
+    }
+
+    function toggleFloatingPanel(panel, toggle) {
+        const isOpen = !panel.hasClass('hidden');
+
+        closeFloatingPanels(panel);
+        panel.toggleClass('hidden', isOpen);
+        toggle.attr('aria-expanded', isOpen ? 'false' : 'true');
+    }
+
+    settingsToggle.on('click', function () {
+        toggleFloatingPanel(settingsPanel, settingsToggle);
 
         return false;
     });
 
-    $('#edit-secondary .post-option-toggle').on('click', function () {
+    customFieldsToggle.on('click', function () {
+        toggleFloatingPanel(customFieldsPanel, customFieldsToggle);
+
+        return false;
+    });
+
+    floatingPanels.find('.write-settings-close').on('click', function () {
+        closeFloatingPanels();
+        return false;
+    });
+
+    $(document).on('click', function (event) {
+        if (
+            floatingPanels.filter(':not(.hidden)').length === 0
+            || floatingPanels.is(event.target)
+            || floatingPanels.has(event.target).length > 0
+            || floatingToggles.is(event.target)
+            || floatingToggles.has(event.target).length > 0
+        ) {
+            return;
+        }
+
+        closeFloatingPanels();
+    }).on('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closeFloatingPanels();
+        }
+    });
+
+    $('#title').on('focus', function () {
+        form.addClass('write-title-focus');
+    });
+
+    $('#text').on('focus', function () {
+        form.removeClass('write-title-focus');
+    });
+
+    function renderWriteOutline(items) {
+        const list = $('#write-outline-list'),
+            empty = $('#write-outline-empty');
+
+        if (list.length === 0) {
+            return;
+        }
+
+        list.empty();
+
+        if (!items || items.length === 0) {
+            empty.removeClass('hidden');
+            return;
+        }
+
+        empty.addClass('hidden');
+
+        items.forEach(function (item, index) {
+            $('<li></li>')
+                .attr('data-level', item.level || 2)
+                .append($('<button type="button"></button>')
+                    .attr('data-outline-index', index)
+                    .text(item.text || '<?php _e('未命名标题'); ?>'))
+                .appendTo(list);
+        });
+    }
+
+    Typecho.renderWriteOutline = renderWriteOutline;
+
+    function collectTextareaOutline() {
+        const text = $('#text').val() || '',
+            wrapper = document.createElement('div'),
+            items = [];
+
+        wrapper.innerHTML = text;
+        Array.from(wrapper.querySelectorAll('h1,h2,h3,h4,h5,h6')).forEach(function (heading) {
+            const content = $.trim(heading.textContent || '');
+
+            if (content) {
+                items.push({
+                    level: parseInt(heading.tagName.replace('H', ''), 10),
+                    text: content
+                });
+            }
+        });
+
+        if (items.length === 0) {
+            text.split(/\r?\n/).forEach(function (line) {
+                const match = line.match(/^\s{0,3}(#{1,6})\s+(.+?)\s*#*\s*$/);
+
+                if (match) {
+                    items.push({
+                        level: match[1].length,
+                        text: $.trim(match[2])
+                    });
+                }
+            });
+        }
+
+        renderWriteOutline(items);
+    }
+
+    $('#text').on('input', collectTextareaOutline);
+    collectTextareaOutline();
+
+    // 控制选项和附件的切换
+    settingsPanel.find('.typecho-option-tabs li').click(function() {
+        settingsPanel.find('.typecho-option-tabs li.active').removeClass('active');
+        settingsPanel.find('.tab-content').addClass('hidden');
+
+        const activeTab = $(this).addClass('active').find('a').attr('href');
+        settingsPanel.find(activeTab).removeClass('hidden');
+
+        return false;
+    });
+
+    settingsPanel.find('.post-option-toggle').on('click', function () {
         const button = $(this),
             panels = button.closest('.post-option-panels'),
-            target = $(button.data('panel')),
+            target = settingsPanel.find(button.data('panel')),
             isOpen = button.attr('aria-expanded') === 'true';
 
         panels.find('.post-option-toggle').attr('aria-expanded', 'false');

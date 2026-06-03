@@ -816,9 +816,19 @@ trait EditTrait
             $timezoneSymbol = $this->options->timezone >= 0 ? '+' : '-';
             $timezoneOffset = abs($this->options->timezone);
             $timezone = $timezoneSymbol . str_pad($timezoneOffset / 3600, 2, '0', STR_PAD_LEFT) . ':00';
-            [$date, $time] = explode(' ', $this->request->get('date'));
+            $dateValue = trim($this->request->get('date'));
+            [$date, $time] = array_pad(preg_split('/\s+/', $dateValue, 2), 2, '');
 
-            $created = strtotime("{$date}T{$time}{$timezone}") - $dstOffset;
+            if ('' === $time) {
+                $timeSource = ($this->have() && $this->created > 0) ? $this->created : $this->options->time;
+                $time = (new \Typecho\Date($timeSource))->format('H:i:s');
+            } elseif (preg_match('/^\d{1,2}:\d{2}$/', $time)) {
+                $time .= ':00';
+            }
+
+            if ('' !== $date) {
+                $created = strtotime("{$date}T{$time}{$timezone}") - $dstOffset;
+            }
         } elseif ($this->request->is('year&month&day')) {
             $second = $this->request->filter('int')->get('sec', date('s'));
             $min = $this->request->filter('int')->get('min', date('i'));

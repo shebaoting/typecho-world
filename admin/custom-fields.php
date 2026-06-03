@@ -2,9 +2,10 @@
 <?php
 $fields = isset($post) ? $post->getFieldItems() : $page->getFieldItems();
 $defaultFields = isset($post) ? $post->getDefaultFieldItems() : $page->getDefaultFieldItems();
+$customFieldsAlwaysOpen = $customFieldsAlwaysOpen ?? false;
 ?>
 <details id="custom-field"
-         class="typecho-post-option" <?php if (!empty($defaultFields) || !empty($fields)): ?>open<?php endif; ?>>
+         class="typecho-post-option" <?php if ($customFieldsAlwaysOpen || !empty($defaultFields) || !empty($fields)): ?>open<?php endif; ?>>
     <summary><?php _e('自定义字段'); ?></summary>
     <ul class="fields mono">
         <?php foreach ($defaultFields as $field): ?>
@@ -36,7 +37,9 @@ $defaultFields = isset($post) ? $post->getDefaultFieldItems() : $page->getDefaul
                     <label for="fieldvalue" class="sr-only"><?php _e('字段值'); ?></label>
                     <textarea name="fieldValues[]" id="fieldvalue" class="text-s w-100"
                               rows="2"><?php echo htmlspecialchars($field[($field['type'] == 'json' ? 'str' : $field['type']) . '_value']); ?></textarea>
-                    <button type="button" class="btn btn-xs"><?php _e('删除'); ?></button>
+                    <button type="button" class="btn btn-xs field-delete" title="<?php _e('删除'); ?>" aria-label="<?php _e('删除'); ?>">
+                        <i class="i-delete" aria-hidden="true"></i>
+                    </button>
                 </div>
             </li>
         <?php endforeach; ?>
@@ -58,13 +61,14 @@ $defaultFields = isset($post) ? $post->getDefaultFieldItems() : $page->getDefaul
                     <label for="fieldvalue" class="sr-only"><?php _e('字段值'); ?></label>
                     <textarea name="fieldValues[]" placeholder="<?php _e('字段值'); ?>" id="fieldvalue"
                               class="text-s w-100" rows="2"></textarea>
-                    <button type="button" class="btn btn-xs"><?php _e('删除'); ?></button>
+                    <button type="button" class="btn btn-xs field-delete" title="<?php _e('删除'); ?>" aria-label="<?php _e('删除'); ?>">
+                        <i class="i-delete" aria-hidden="true"></i>
+                    </button>
                 </div>
             </li>
         <?php endif; ?>
     </ul>
     <div class="add">
-        <button type="button" class="btn btn-xs operate-add"><?php _e('+添加字段'); ?></button>
         <div class="description kit-hidden-mb">
             <?php _e('自定义字段可以扩展你的模板功能, 使用方法参见 <a href="https://docs.typecho.org/help/custom-fields">帮助文档</a>'); ?>
         </div>

@@ -146,6 +146,58 @@ $(document).ready(function() {
         }
     }
 
+    function parseUploadJsonResponse (text) {
+        const source = String(text || '').replace(/^\s*while\s*\(1\)\s*;\s*/, '').trim();
+
+        if (!source) {
+            throw new Error('empty upload response');
+        }
+
+        try {
+            return JSON.parse(source);
+        } catch (error) {
+            // Some local PHP setups print notices before/after JSON. The file may already be saved,
+            // so recover the actual JSON payload instead of showing a false upload failure.
+        }
+
+        const starts = [];
+
+        for (let i = 0; i < source.length; i ++) {
+            if (source[i] === '[' || source[i] === '{') {
+                starts.push(i);
+            }
+        }
+
+        for (const start of starts) {
+            const candidate = source.slice(start);
+
+            for (let end = candidate.length; end > 0; end --) {
+                const char = candidate[end - 1];
+
+                if (char !== ']' && char !== '}') {
+                    continue;
+                }
+
+                try {
+                    return JSON.parse(candidate.slice(0, end));
+                } catch (error) {
+                }
+            }
+        }
+
+        throw new Error('invalid upload response');
+    }
+
+    function getUploadAttachment (data) {
+        const attachment = Array.isArray(data) ? data[1] : data;
+
+        if (!attachment || !attachment.url) {
+            throw new Error('invalid upload attachment');
+        }
+
+        return attachment;
+    }
+
     Typecho.uploadFile = (function () {
         const types = '<?php echo json_encode($options->allowedAttachmentTypes); ?>';
         const maxSize = <?php echo $phpMaxFilesize ?>;
@@ -174,20 +226,32 @@ $(document).ready(function() {
                 method: 'POST',
                 body: data
             }).then(function (response) {
-                if (response.ok) {
-                    return response.json();
-                } else {
-                    throw new Error(response.statusText);
-                }
+                return response.text().then(function (text) {
+                    if (!response.ok) {
+                        const error = new Error(response.statusText || 'upload error');
+                        error.responseText = text;
+                        throw error;
+                    }
+
+                    try {
+                        return parseUploadJsonResponse(text);
+                    } catch (error) {
+                        error.responseText = text;
+                        throw error;
+                    }
+                });
             }).then(function (data) {
                 if (data) {
-                    const [_, attachment] = data;
+                    const attachment = getUploadAttachment(data);
                     fileUploadComplete(file, attachment);
                     upload();
                 } else {
                     throw new Error('no data');
                 }
             }).catch(function (error) {
+                if (window.console && error.responseText) {
+                    console.error('Typecho upload failed:', error, error.responseText);
+                }
                 fileUploadError('network', file);
                 upload();
             });

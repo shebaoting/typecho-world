@@ -7,9 +7,44 @@ $post = \Widget\Contents\Post\Edit::alloc()->prepare();
 ?>
 <main class="main">
     <div class="body container">
-        <?php include 'page-title.php'; ?>
-        <form class="row typecho-page-main typecho-post-area" action="<?php $security->index('/action/contents-post-edit'); ?>" method="post" name="write_post">
-            <div class="col-mb-12 col-tb-9" role="main">
+        <form id="write-post-form" class="typecho-page-main typecho-post-area write-layout" action="<?php $security->index('/action/contents-post-edit'); ?>" method="post" name="write_post">
+            <div class="write-topbar">
+                <?php include 'page-title.php'; ?>
+                <span class="left write-status">
+                    <button type="button" id="btn-cancel-preview" class="btn write-icon-button"
+                            title="<?php _e('取消预览'); ?>" aria-label="<?php _e('取消预览'); ?>">
+                        <i class="i-caret-left" aria-hidden="true"></i>
+                    </button>
+                </span>
+                <div class="write-actions">
+                    <button type="button" class="btn write-icon-button write-panel-toggle" aria-controls="write-settings-panel"
+                            aria-expanded="false" title="<?php _e('选项与附件'); ?>" aria-label="<?php _e('选项与附件'); ?>">
+                        <i class="write-action-icon write-action-settings" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="btn write-icon-button write-custom-fields-toggle" aria-controls="write-custom-fields-panel"
+                            aria-expanded="false" title="<?php _e('自定义字段'); ?>" aria-label="<?php _e('自定义字段'); ?>">
+                        <i class="write-action-icon write-action-fields" aria-hidden="true"></i>
+                    </button>
+                    <input type="hidden" name="do" value="publish" />
+                    <input type="hidden" name="cid" value="<?php $post->cid(); ?>"/>
+                    <button type="button" id="btn-preview" class="btn write-icon-button" title="<?php _e('预览文章'); ?>" aria-label="<?php _e('预览文章'); ?>">
+                        <i class="write-action-icon write-action-preview" aria-hidden="true"></i>
+                    </button>
+                    <button type="submit" name="do" value="save" id="btn-save"
+                            class="btn write-icon-button" title="<?php _e('保存草稿'); ?>" aria-label="<?php _e('保存草稿'); ?>">
+                        <i class="write-action-icon write-action-save" aria-hidden="true"></i>
+                    </button>
+                    <button type="submit" name="do" value="publish" class="btn primary write-icon-button"
+                            id="btn-submit" title="<?php _e('发布文章'); ?>" aria-label="<?php _e('发布文章'); ?>">
+                        <i class="write-action-icon write-action-publish" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="write-workspace">
+                <div id="write-toolbar-slot" class="write-toolbar-slot" aria-label="<?php _e('编辑工具栏'); ?>"></div>
+                <div class="write-grid">
+                <div class="write-editor-column" role="main">
                 <?php if ($post->draft): ?>
                     <?php if ($post->draft['cid'] != $post->cid): ?>
                         <?php $postModifyDate = new \Typecho\Date($post->draft['modified']); ?>
@@ -53,32 +88,26 @@ $post = \Widget\Contents\Post\Edit::alloc()->prepare();
                               name="text" class="w-100 mono"><?php echo htmlspecialchars($post->text); ?></textarea>
                 </p>
 
-                <?php include 'custom-fields.php'; ?>
-
-                <p class="submit">
-                    <span class="left">
-                        <button type="button" id="btn-cancel-preview" class="btn"><i
-                                class="i-caret-left"></i> <?php _e('取消预览'); ?></button>
-                    </span>
-                    <span class="right">
-                        <input type="hidden" name="do" value="publish" />
-                        <input type="hidden" name="cid" value="<?php $post->cid(); ?>"/>
-                        <button type="button" id="btn-preview" class="btn"><i
-                                class="i-exlink"></i> <?php _e('预览文章'); ?></button>
-                        <button type="submit" name="do" value="save" id="btn-save"
-                                class="btn"><?php _e('保存草稿'); ?></button>
-                        <button type="submit" name="do" value="publish" class="btn primary"
-                                id="btn-submit"><?php _e('发布文章'); ?></button>
-                        <?php if ($options->markdown && (!$post->have() || $post->isMarkdown)): ?>
-                            <input type="hidden" name="markdown" value="1"/>
-                        <?php endif; ?>
-                    </span>
-                </p>
-
                 <?php \Typecho\Plugin::factory('admin/write-post.php')->call('content', $post); ?>
+                </div>
+
+                <aside id="edit-secondary" class="write-outline-panel" role="complementary" aria-label="<?php _e('文章大纲'); ?>">
+                    <section class="write-outline">
+                        <h3 class="write-outline-title"><?php _e('大纲'); ?></h3>
+                        <ol id="write-outline-list" class="write-outline-list"></ol>
+                        <p id="write-outline-empty" class="write-outline-empty"><?php _e('暂无标题节点'); ?></p>
+                    </section>
+                </aside>
+                </div>
             </div>
 
-            <div id="edit-secondary" class="col-mb-12 col-tb-3" role="complementary">
+            <div id="write-settings-panel" class="write-settings-panel hidden" role="dialog"
+                 aria-label="<?php _e('选项与附件'); ?>">
+                <div class="write-settings-popover">
+                    <div class="write-settings-header">
+                        <strong><?php _e('选项与附件'); ?></strong>
+                        <button type="button" class="write-settings-close" aria-label="<?php _e('关闭'); ?>">×</button>
+                    </div>
                 <ul class="typecho-option-tabs">
                     <li class="active w-50"><a href="#tab-advance"><?php _e('选项'); ?></a></li>
                     <li class="w-50"><a href="#tab-files" id="tab-files-btn"><?php _e('附件'); ?></a></li>
@@ -271,6 +300,23 @@ $post = \Widget\Contents\Post\Edit::alloc()->prepare();
                 <div id="tab-files" class="tab-content hidden">
                     <?php include 'file-upload.php'; ?>
                 </div><!-- end #tab-files -->
+                </div>
+            </div>
+
+            <div id="write-custom-fields-panel" class="write-settings-panel write-custom-fields-panel hidden" role="dialog"
+                 aria-label="<?php _e('自定义字段'); ?>">
+                <div class="write-settings-popover">
+                    <div class="write-settings-header">
+                        <strong><?php _e('自定义字段'); ?></strong>
+                        <button type="button" class="write-field-add operate-add" title="<?php _e('添加字段'); ?>" aria-label="<?php _e('添加字段'); ?>">
+                            <span aria-hidden="true"></span>
+                        </button>
+                        <button type="button" class="write-settings-close" aria-label="<?php _e('关闭'); ?>">×</button>
+                    </div>
+                    <?php $customFieldsAlwaysOpen = true; ?>
+                    <?php include 'custom-fields.php'; ?>
+                    <?php unset($customFieldsAlwaysOpen); ?>
+                </div>
             </div>
         </form>
     </div>

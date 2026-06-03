@@ -318,7 +318,11 @@ class Options extends Base
             return $url;
         }
 
-        $url = Common::url($file, $url) . '?v=' . $this->version;
+        $path = defined('__TYPECHO_ROOT_DIR__') && defined('__TYPECHO_ADMIN_DIR__')
+            ? __TYPECHO_ROOT_DIR__ . __TYPECHO_ADMIN_DIR__ . $type . '/' . $file
+            : null;
+        $version = $path && is_file($path) ? (string) filemtime($path) : $this->version;
+        $url = Common::url($file, $url) . '?v=' . $version;
 
         if ($return) {
             return $url;

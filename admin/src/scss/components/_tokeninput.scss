@@ -3,10 +3,14 @@
  */
 
 ul.token-input-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
   clear: left;
   min-height: 36px;
   margin: 0;
-  padding: 3px 5px;
+  padding: 8px;
   border: 1px solid $color-border-strong;
   border-radius: $radius-sm;
   background-color: $color-surface-strong;
@@ -20,7 +24,7 @@ ul.token-input-list {
   }
 
   li {
-    margin: 3px 0;
+    margin: 0;
   }
 }
 
@@ -37,28 +41,44 @@ ul.token-input-list li input {
 }
 
 li.token-input-token {
-  height: 27px;
-  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 10px;
   border: 1px solid $color-border;
-  border-radius: 999px;
+  border-radius: $radius-sm;
   background-color: $color-surface-muted;
   color: $color-text-muted;
   cursor: default;
   font-size: 13px;
-  line-height: 25px;
-  text-align: right;
+  line-height: 32px;
   white-space: nowrap;
 
   p {
-    float: left;
-    display: inline;
+    display: inline-flex;
+    align-items: center;
+    overflow: hidden;
+    height: 100%;
     margin: 0;
+    line-height: 1;
+    text-overflow: ellipsis;
+    transform: translateY(1px);
   }
 
   span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    height: 100%;
     color: $color-text-weak;
     font-weight: 700;
+    line-height: 1;
     cursor: pointer;
+    transform: translateY(1px);
   }
 }
 
@@ -69,12 +89,15 @@ li.token-input-selected-token {
 }
 
 li.token-input-input-token {
+  flex: 1 1 128px;
+  min-width: 128px;
+  height: 32px;
   padding: 0 4px;
 }
 
 div.token-input-dropdown {
   position: absolute;
-  z-index: 50;
+  z-index: 320;
   overflow: hidden;
   border: 1px solid $color-border;
   border-radius: $radius-md;

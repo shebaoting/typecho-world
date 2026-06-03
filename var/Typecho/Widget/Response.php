@@ -142,7 +142,13 @@ class Response
     public function throwJson($message): never
     {
         $this->throwCallback(function () use ($message) {
-            echo json_encode($message);
+            if (ob_get_level() > 0 && ob_get_length() > 0) {
+                @ob_clean();
+            }
+
+            $flags = defined('JSON_INVALID_UTF8_SUBSTITUTE') ? JSON_INVALID_UTF8_SUBSTITUTE : 0;
+            $json = json_encode($message, $flags);
+            echo false === $json ? 'null' : $json;
         }, 'application/json');
     }
 
