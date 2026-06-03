@@ -942,6 +942,10 @@
       border-radius: $radius-sm;
     }
 
+    .tag-option p {
+      margin-top: 0;
+    }
+
     li.token-input-input-token input {
       min-height: 28px;
     }
@@ -1009,7 +1013,7 @@
   }
 
   .write-custom-fields-panel {
-    width: min(960px, calc(100vw - 32px));
+    width: min(480px, calc(100vw - 32px));
 
     .write-settings-popover {
       width: 100%;
@@ -1035,7 +1039,7 @@
 
       .fields .field {
         display: grid;
-        grid-template-columns: minmax(160px, 1.1fr) minmax(140px, .8fr) minmax(360px, 3fr) 42px;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) 38px;
         gap: 10px;
         align-items: center;
         width: 100%;
@@ -1045,7 +1049,11 @@
       }
 
       .field-name {
-        display: contents;
+        grid-column: 1 / span 2;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        min-width: 0;
 
         input[name="fieldNames[]"] {
           width: 100%;
@@ -1059,7 +1067,11 @@
       }
 
       .field-value {
-        display: contents;
+        grid-column: 3 / span 2;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 38px;
+        gap: 10px;
+        min-width: 0;
 
         textarea[name="fieldValues[]"] {
           width: 100%;

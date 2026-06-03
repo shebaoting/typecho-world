@@ -17,12 +17,12 @@ include 'header.php';
             <h1>
                 <a href="https://typecho.org" class="login-wordmark" aria-label="Typecho World">
                     <span class="login-wordmark-icon" aria-hidden="true"></span>
-                    <span class="login-wordmark-text">typecho world</span>
+                    <span class="login-wordmark-text">Typecho World</span>
                 </a>
             </h1>
             <div class="login-brand-copy">
                 <span><?php $options->title(); ?></span>
-                <p><?php _e('曾梦想仗剑走天涯，看一看世界的繁华。'); ?></p>
+                <p><?php echo htmlspecialchars($options->description); ?></p>
             </div>
         </div>
 

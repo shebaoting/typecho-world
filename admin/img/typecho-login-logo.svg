@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Typecho World">
+  <rect x="88" y="88" width="848" height="848" rx="102" fill="#6f7a70"/>
+  <path fill="#fff" d="M274 260c0-18 14-32 32-32h412c18 0 32 14 32 32v92c0 18-14 32-32 32H600c-18 0-32 14-32 32v116l86 152-141 225-143-225 87-152V416c0-18-14-32-32-32H306c-18 0-32-14-32-32v-92Z"/>
+  <circle cx="512" cy="535" r="40" fill="#6f7a70"/>
+  <path fill="#6f7a70" d="M491 572h42v218h-42z"/>
+</svg>

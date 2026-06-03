@@ -139,7 +139,7 @@ $post = \Widget\Contents\Post\Edit::alloc()->prepare();
                         </ul>
                     </section>
 
-                    <section class="typecho-post-option">
+                    <section class="typecho-post-option tag-option">
                         <label for="token-input-tags" class="typecho-label"><?php _e('标签'); ?></label>
                         <p><input id="tags" name="tags" type="text" value="<?php $post->have() ? $post->tags(',', false) : ''; ?>"
                                   class="w-100 text"/></p>
